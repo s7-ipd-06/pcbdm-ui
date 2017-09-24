@@ -40,9 +40,7 @@ export default {
       list.classList.remove('dropTarget')
 
       for (let f of e.dataTransfer.files) {
-        this.files.push(f)
-        console.log(f)
-      }
+        this.files.push(f)      }
     })
 
     list.addEventListener('dragleave', (e) => {
@@ -112,8 +110,8 @@ export default {
 .file-thumbnail {
   margin: 8px;
   border: 1px solid #ddd;
-  height: 80px;
-  width: 120px;
+  height: 60px;
+  min-width: 80px;
   box-shadow: inset 0 0 16px #ddd;
 }
 
@@ -124,8 +122,8 @@ export default {
 
 .file-name {
   display: inline-block;
-  width: 164px;
-  font-size: 1.1em;
+  width: 180px;
+  font-size: 1em;
   font-weight: bold;
   white-space: nowrap;
   overflow: hidden;

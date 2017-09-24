@@ -14,7 +14,8 @@
     "pack": "npm run pack:main && npm run pack:renderer",
     "pack:main": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.main.config.js",
     "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js",
-    "postinstall": ""
+    "postinstall": "",
+    "install": "electron-rebuild"
   },
   "build": {
     "productName": "pcbdm-ui",
@@ -51,6 +52,7 @@
     }
   },
   "dependencies": {
+    "serialport": "^4.0.7",
     "vue": "^2.3.3"
   },
   "devDependencies": {
@@ -69,9 +71,10 @@
     "del": "^3.0.0",
     "devtron": "^1.4.0",
     "electron": "^1.7.5",
+    "electron-builder": "^19.19.1",
     "electron-debug": "^1.4.0",
     "electron-devtools-installer": "^2.2.0",
-    "electron-builder": "^19.19.1",
+    "electron-rebuild": "^1.6.0",
     "extract-text-webpack-plugin": "^3.0.0",
     "file-loader": "^0.11.2",
     "html-webpack-plugin": "^2.30.1",
