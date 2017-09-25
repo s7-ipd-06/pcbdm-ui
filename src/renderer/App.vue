@@ -14,6 +14,7 @@
 
     <aside id="sidebar-right">
       <!-- ProcessController -->
+      <serial-monitor></serial-monitor>
       <!-- ManualControls -->
     </aside>
   </div>
@@ -21,11 +22,13 @@
 
 <script>
   import FileList from '@/components/FileList'
+  import SerialMonitor from '@/components/SerialMonitor'
 
   export default {
     name: 'pcbdm-ui',
     components: {
-      FileList
+      FileList,
+      SerialMonitor
     }
   }
 </script>
@@ -40,6 +43,9 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  outline: 0;
+  -webkit-tap-highlight-color: none;
+  border: 0;
 }
 
 html, body {
@@ -60,7 +66,7 @@ aside {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 320px;
+  width: 280px;
 
   border-color: #d7d7d7;
   border-style: solid;
