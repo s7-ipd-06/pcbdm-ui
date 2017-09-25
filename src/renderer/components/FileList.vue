@@ -1,7 +1,7 @@
 <template>
   <div id="list" class="full-height">
     <div v-for="file in files" :class="{ file, active: file.isActive }">
-      <div class="file-thumbnail" :style="{ backgroundImage: file.thumbnail }"></div>
+      <div class="file-thumbnail" :style="{ backgroundImage: 'url(' + file.thumbnail + ')' }"></div>
       <div class="file-information">
         <div class="file-name" :title="file.name">{{ file.name }}</div>
       </div>
@@ -17,16 +17,18 @@
 
 <script>
 
+import RenderThumbnail from './FileList/lib/render-thumbnail.js'
+const fs = require('fs')
+const uniqid = require('uniqid')
+
 export default {
   name: 'file-list',
   data () {
     return {
       files: [
-        {name: 'Screen Shot 2017-08-20 at 19.33.1017-08-20 at 19.33.166.png'},
+        {name: 'Screen Shot 2017-08-20 at 19.33.1017-08-20 at 19.33.166.png', thumbnail: '/static/no-image.jpg'},
         {isActive: true, name: 'Screen Shot 2017-08-20 at 19.33.16.png'},
-        {name: 'Screen Shot 2017-08-20 at 19.33.16.png'},
-        {name: 'Screen Shot 2017-08-20 at 19.33.16.png'},
-        {name: 'Screen Shot 2017-08-20 at 19.33.1017-08-20 at 19.33.166.png'}
+        {name: 'Screen.png'}
       ]
     }
   },
@@ -40,8 +42,13 @@ export default {
       list.classList.remove('dropTarget')
 
       for (let f of e.dataTransfer.files) {
-        this.files.push(f)
-        console.log(f)
+        RenderThumbnail(f.path, (bfr, ext) => {
+          const thumbPath = '/temp/' + uniqid() + '.' + ext
+          fs.writeFile(__static + thumbPath, bfr, () => {
+            f.thumbnail = '/static' + thumbPath
+            this.files.push(f)
+          })
+        })
       }
     })
 
@@ -115,6 +122,7 @@ export default {
   height: 80px;
   width: 120px;
   box-shadow: inset 0 0 16px #ddd;
+  background-size: 100% 100%;
 }
 
 .file-information {;
