@@ -38,6 +38,7 @@ export default {
         {type: 'outgoing', value: 'Blablatest\\n'},
       ],
       ports: [],
+      currentPort: '',
       send_message: ''
     }
   },
@@ -80,6 +81,7 @@ button, input[type=submit] {
   border-radius: 0;
   font-size: 1em;
   cursor: pointer;
+  height: 30px;
   /*font-weight: bold;*/
 }
 
@@ -89,6 +91,7 @@ button:active, input[type=submit]:active {
 }
 
 input[type=text] {
+  height: 30px;
   width: 227px;
   padding: 8px;
   font-size: 1em;
@@ -98,6 +101,28 @@ input[type=text] {
 
 input[type=text]:focus {
   box-shadow: inset 0 0 8px 0px #aaa;
+}
+
+select {
+  height: 30px;
+  padding: 8px;
+  width: 208px;
+  font-size: 1em;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: inset 0 0 8px 0px #ddd;
+  border-radius: 0px;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, gray 50%),
+    linear-gradient(135deg, gray 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(1em + 2px),
+    calc(100% - 15px) calc(1em + 2px);
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
 }
 
 </style>

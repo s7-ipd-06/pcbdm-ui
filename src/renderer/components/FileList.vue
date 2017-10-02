@@ -26,9 +26,9 @@ export default {
   data () {
     return {
       files: [
-        {name: 'Screen Shot 2017-08-20 at 19.33.1017-08-20 at 19.33.166.png', thumbnail: '/static/no-image.jpg'},
-        {isActive: true, name: 'Screen Shot 2017-08-20 at 19.33.16.png'},
-        {name: 'Screen.png'}
+        {name: 'Board1.brd', thumbnail: '/static/no-image.jpg'},
+        {isActive: true, name: 'Board2.brd', thumbnail: '/static/no-image.jpg'},
+        {name: 'Board3.brd', thumbnail: '/static/no-image.jpg'}
       ]
     }
   },
