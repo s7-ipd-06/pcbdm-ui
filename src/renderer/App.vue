@@ -2,7 +2,7 @@
   <div id="app">
     <aside id="sidebar-left">
       <h1>Files</h1>
-      <file-list></file-list>
+      <file-list @fileSelected="fileSelected"></file-list>
     </aside>
 
     <section id="main">
@@ -29,6 +29,14 @@
     components: {
       FileList,
       SerialMonitor
+    },
+    mounted: () => {
+      
+    },
+    methods: {
+      fileSelected: (file) => {
+        console.log('fileSelected: ', file)
+      }
     }
   }
 </script>

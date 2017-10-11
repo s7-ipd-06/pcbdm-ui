@@ -17,13 +17,18 @@ module.exports = (path, callback) => {
   // Check file  type
   const fileBuffer = fs.readFileSync(path)
   const fileString = fileBuffer.toString()
-  
+
   // Check if XML
   if(isXML(fileString)) {
     // Check if Eagle .brd file
     if(pathInfo.ext == '.brd') {
-      eagle2svg(fileString, (bfr) => {
+      eagle2svg(fileString)
+      .then((bfr) => {
         callback(bfr, 'svg')
+      })
+      .catch((err) => {
+        console.error(err)
+        throw err
       })
     }
   }
