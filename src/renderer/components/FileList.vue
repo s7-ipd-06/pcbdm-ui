@@ -43,9 +43,7 @@ class File extends EventEmitter {
     const pathInfo = Path.parse(path)
 
     // Load file
-    console.log('loading')
     this.contents = fs.readFileSync(path).toString()
-    console.log('loaded')
 
     // Generate & save the thumbnail
     this.generateThumbnail()
@@ -54,7 +52,6 @@ class File extends EventEmitter {
       fs.writeFile(__static + thumbPath, thumbnailContents, () => {
         this.thumbnail = '/static' + thumbPath
       })
-      console.log('thumbnail generated')
     })
     .catch((err) => {
       console.error(err)
@@ -80,13 +77,11 @@ class File extends EventEmitter {
 
   select() {
     this.selected = true;
-    console.log('file.select()')
-    this.emit('select')
+    this.emit('select', this)
   }
 
   deselect() {
     this.selected = false;
-    console.log('file.deselect()')
     this.emit('deselect')
   }
 }
@@ -109,8 +104,8 @@ export default {
 
       for (let f of e.dataTransfer.files) {
         const newFile = new File(f.path)
-        .on('select', () => {
-          console.log('deselecting all')
+        .on('select', (file) => {
+          this.$emit('fileSelected', file)
           this.files.filter((file) => file != newFile).forEach((file) => file.deselect())
         })
 

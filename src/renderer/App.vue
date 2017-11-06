@@ -8,7 +8,7 @@
     <section id="main">
       <!-- PCBViewer -->
       <!-- AlgorithmSelector -->
-      <!-- HoleBrowser -->
+      <hole-list></hole-list>
       <!-- SizeMapper -->
     </section>
 
@@ -22,20 +22,23 @@
 
 <script>
   import FileList from '@/components/FileList'
+  import HoleList from '@/components/HoleList'
   import SerialMonitor from '@/components/SerialMonitor'
 
   export default {
     name: 'pcbdm-ui',
     components: {
       FileList,
+      HoleList,
       SerialMonitor
     },
     mounted: () => {
-      
     },
     methods: {
       fileSelected: (file) => {
         console.log('fileSelected: ', file)
+
+        // 
       }
     }
   }
@@ -84,7 +87,8 @@ aside {
 }
 
 #main {
-  box-flex: 1;  
+  margin-left: 280px;
+  padding: 10px;
 }
 
 aside h1 {
