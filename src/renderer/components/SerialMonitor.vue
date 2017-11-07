@@ -7,7 +7,7 @@
           {{ port.comName }}
         </option>
       </select>
-      <button>Connect</button>
+      <button @click="connect">{{ connected ? 'Disconnect' : 'Connect' }}</button>
     </div>
 
     <div id="messages">
@@ -37,15 +37,38 @@ export default {
         {type: 'incoming', value: 'Testblabla\\n'},
         {type: 'outgoing', value: 'Blablatest\\n'},
       ],
-      ports: [],
-      currentPort: '',
+      ports: [
+        {comName: '/dev/ttys004'}
+      ],
+      port: null,
+      connected: false,
+      currentPort: null,
       send_message: ''
     }
   },
   created () {
-    SerialPort.list((err, result) => {
-      this.ports = result
-    })
+    //setInterval(() => {
+      SerialPort.list((err, result) => {
+        this.ports = [...this.ports, ...result]
+      })
+    //}, 1000)
+  },
+  methods: {
+    connect () {
+      if(this.port) {
+        this.port = null
+        this.connected = false
+        return;
+      }
+      this.port = new SerialPort(this.currentPort, {})
+      this.port.on('open', (err) => {
+        console.log('Opened', err)
+        this.connected = true
+      })
+      this.port.on('data', (data) => {
+        console.log('Received: ', data)
+      })
+    }
   }
 }
 
