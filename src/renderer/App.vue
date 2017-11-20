@@ -6,10 +6,7 @@
     </aside>
 
     <section id="main">
-      <!-- PCBViewer -->
-      <!-- AlgorithmSelector -->
-      <hole-list></hole-list>
-      <!-- SizeMapper -->
+      <hole-list :holes="holes"></hole-list>
     </section>
 
     <aside id="sidebar-right">
@@ -25,6 +22,9 @@
   import HoleList from '@/components/HoleList'
   import SerialMonitor from '@/components/SerialMonitor'
 
+  const fs = require('fs')
+  import HoleExtractor from '../lib/hole-extractor.js'
+
   export default {
     name: 'pcbdm-ui',
     components: {
@@ -32,13 +32,22 @@
       HoleList,
       SerialMonitor
     },
+    data: () => {
+      return {
+        holes: [{x: 1, y: 2, diameter: 3, drilled: false}]
+      }
+    },
     mounted: () => {
     },
     methods: {
       fileSelected: (file) => {
-        console.log('fileSelected: ', file)
-
-        // 
+        const fileContents = fs.readFileSync(file.path).toString()
+        
+        HoleExtractor(fileContents)
+        .then((holes) => {
+          this.holes = holes
+        })
+        .catch((e) => {throw e})
       }
     }
   }

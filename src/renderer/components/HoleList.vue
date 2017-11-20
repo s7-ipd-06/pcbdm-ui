@@ -30,15 +30,11 @@ const EventEmitter = require('events').EventEmitter
 
 export default {
   name: 'hole-list',
-  data () {
-    return {
-      holes: [
-        {x: 2, y: 3, diameter: 5}
-      ]
-    }
-  },
+  props: ['holes'],
   mounted () {
-    
+    setInterval(() => {
+     console.log(this.holes.length);
+    }, 1000)
   }
 }
 
