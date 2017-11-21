@@ -6,6 +6,10 @@
     </aside>
 
     <section id="main">
+      <pcb-viewer :holes="holes"></pcb-viewer>
+      <path-generator :holes="holes"></path-generator>
+      <div style="clear: both"></div>
+      <br />
       <hole-list :holes="holes"></hole-list>
     </section>
 
@@ -21,6 +25,8 @@
   import FileList from '@/components/FileList'
   import HoleList from '@/components/HoleList'
   import SerialMonitor from '@/components/SerialMonitor'
+  import PcbViewer from '@/components/PCBViewer'
+  import PathGenerator from '@/components/PathGenerator'
 
   const fs = require('fs')
   import HoleExtractor from '../lib/hole-extractor.js'
@@ -30,24 +36,84 @@
     components: {
       FileList,
       HoleList,
-      SerialMonitor
+      SerialMonitor,
+      PcbViewer,
+      PathGenerator
     },
-    data: () => {
+    data () {
       return {
-        holes: [{x: 1, y: 2, diameter: 3, drilled: false}]
+        holes: []
       }
     },
-    mounted: () => {
+    /*computed: {
+      holeSizes () {
+        let holeSizes = this.holes.reduce((initial, hole) => {
+          if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
+          return initial
+        }, []).sort()
+        
+        const min = holeSizes[0]
+        const max = holeSizes[holeSizes.length-1]
+        const delta = max-min
+
+        holeSizes = holeSizes.map((hole) => {
+          const hue = 360 * (hole-min) / delta;
+
+          return {
+            d: hole,
+            hue: hue
+          }
+        })
+
+        this.holeSizes = holeSizes
+
+        return holeSizes
+      }
+    },*/
+    mounted () {
     },
     methods: {
-      fileSelected: (file) => {
+      fileSelected (file) {
         const fileContents = fs.readFileSync(file.path).toString()
         
         HoleExtractor(fileContents)
         .then((holes) => {
-          this.holes = holes
+          this.holes = holes.map((hole) => {
+            hole.hue = 0
+            hole.highlighted = false
+            return hole
+          })
+          this.holes = this.holes.sort((a, b) => a.d - b.d)
         })
         .catch((e) => {throw e})
+      }
+    },
+    watch: {
+      holes () {
+        let holeSizes = this.holes.reduce((initial, hole) => {
+          if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
+          return initial
+        }, []).sort()
+        
+        const min = holeSizes[0]
+        const max = holeSizes[holeSizes.length-1]
+        const delta = max-min
+
+        holeSizes = holeSizes.map((hole) => {
+          const hue = (380 * (hole-min) / delta) % 360;
+
+          return {
+            d: hole,
+            hue: hue
+          }
+        })
+
+        this.holeSizes = holeSizes
+
+        this.holes.forEach((hole) => {
+          const holeSize = holeSizes.find((h) => h.d == hole.d)
+          hole.hue = holeSize.hue
+        })
       }
     }
   }
@@ -118,6 +184,15 @@ aside h1 {
 #sidebar-right {
   right: 0;
   /*border-left-width: 1px;*/
+}
+
+#pcb-viewer {
+  float: left;
+  margin-right: 25px;
+}
+
+#path-generator {
+  float: left;
 }
 
 </style>

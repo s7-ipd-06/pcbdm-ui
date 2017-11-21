@@ -52,9 +52,10 @@
     }
   },
   "dependencies": {
-    "eagle2svg": "latest",
+    "eagle2svg": "0.0.4",
     "file-type": "^6.2.0",
     "is-xml": "^0.1.0",
+    "latest": "^0.2.0",
     "serialport": "^4.0.7",
     "uniqid": "^4.1.1",
     "vue": "^2.3.3"

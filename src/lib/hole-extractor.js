@@ -8,6 +8,13 @@ const parseXML = xml2js.parseString
 const fs = require('fs')
 const Path = require('path')
 
+function F(n) {
+  const decimals = 3
+  const tenfold = Math.pow(10, decimals)
+  const result = Math.round(parseFloat(n) * tenfold)/tenfold
+  return result
+}
+
 export default function(fileString) {
   return new Promise((resolve, reject) => {
     parseXML(fileString, (err, result) => {
@@ -31,8 +38,8 @@ export default function(fileString) {
         let rotation = element.$.rot || 'R0';
             rotation = parseFloat(rotation.substr(1))
         
-        const boardX = parseFloat(element.$.x)
-        const boardY = parseFloat(element.$.y)
+        const boardX = F(element.$.x)
+        const boardY = F(element.$.y)
 
         let packageHoles = extractPackageHoles(pkg)
 
@@ -50,8 +57,8 @@ export default function(fileString) {
 
         // Translate
         .map((hole) => {
-          hole.x += boardX
-          hole.y += boardY
+          hole.x = F(hole.x + boardX)
+          hole.y = F(hole.y + boardY)
           return hole
         })
 
@@ -68,19 +75,20 @@ function extractPackageHoles(pkg) {
   
   if(typeof pkg.pad != 'undefined') {
     pkg.pad.forEach((pad) => {
-      switch(pad.$.shape) {
+      // Don't add pads
+      /*switch(pad.$.shape) {
         case 'octagon':
         case 'long':
-          holes.push({x: pad.$.x, y: pad.$.y, d: parseFloat(pad.$.drill)})
+          holes.push({x: pad.$.x, y: pad.$.y, d: F(pad.$.drill)})
           break;
         default:
-          holes.push({x: pad.$.x, y: pad.$.y, d: parseFloat(pad.$.diameter)})
+          holes.push({x: pad.$.x, y: pad.$.y, d: F(pad.$.diameter)})
           break;
-      }
+      }*/
 
       // Hole
       if(typeof pad.$.drill !== 'undefined') {
-        holes.push({x: pad.$.x, y: pad.$.y, d: parseFloat(pad.$.drill)})
+        holes.push({x: pad.$.x, y: pad.$.y, d: F(pad.$.drill)})
       }
     })
   }

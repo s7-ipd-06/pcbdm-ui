@@ -103,18 +103,7 @@ export default {
       list.classList.remove('dropTarget')
 
       for (let f of e.dataTransfer.files) {
-        const newFile = new File(f.path)
-        .on('select', (file) => {
-          this.$emit('fileSelected', file)
-          this.files.filter((file) => file != newFile).forEach((file) => file.deselect())
-        })
-
-        this.files.push(newFile)
-
-        // If no file selected yet, select this file
-        if(this.files.filter((file) => file.selected).length == 0) {
-          newFile.select()
-        }
+        addFile.bind(this)(f.path)
       }
     })
 
@@ -127,7 +116,29 @@ export default {
       e.preventDefault() // Prevent the page from actually trying to open and view the file
       e.stopPropagation() // Stop the event from propagating to parent elements
     })
+
+    // Add test file when in development mode
+    if(process.env.NODE_ENV == 'development') {
+      addFile.bind(this)(__static + '/main.brd')
+    }
   }
+}
+
+function addFile(path) {
+  const newFile = new File(path)
+  .on('select', (file) => {
+    this.$emit('fileSelected', file)
+    this.files.filter((file) => file != newFile).forEach((file) => file.deselect())
+  })
+
+  this.files.push(newFile)
+
+  // If no file selected yet, select this file
+  if(this.files.filter((file) => file.selected).length == 0) {
+    newFile.select()
+  }
+
+  return newFile
 }
 
 </script>
@@ -176,6 +187,7 @@ export default {
 .file {
   border-bottom: 1px solid #dfdfdf;
   display: flex;
+  cursor: pointer;
 }
 
 .file.active {

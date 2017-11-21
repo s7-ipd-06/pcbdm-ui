@@ -1,22 +1,25 @@
 <template>
   <div id="hole-list">
     <h2>Holes</h2>
-    <table cellpadding="0" cellspacing="0">
-      <thead>
-        <tr>
-          <th>x</th>
-          <th>y</th>
-          <th>diameter</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="hole in holes" :class="{ 'active': hole.selected }" @click="hole.select()">
-          <td>{{ hole.x }}</td>
-          <td>{{ hole.y }}</td>
-          <td>{{ hole.diameter }}</td>
-        </tr>
-      </tbody>
-    </table>
+    <br />
+    <div class="holes-wrapper">
+      <table cellpadding="0" cellspacing="0">
+        <thead>
+          <tr>
+            <th>x</th>
+            <th>y</th>
+            <th>diameter</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="hole in holes" :class="{ 'active': hole.selected, 'highlighted': hole.highlighted }"  :style="{ 'background-color': 'hsl(' + hole.hue + ', 100%, 95%)' }" @mouseover="hole.highlighted = true" @mouseout="hole.highlighted = false" >
+            <td>{{ hole.x }}</td>
+            <td>{{ hole.y }}</td>
+            <td>{{ hole.d }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
@@ -31,19 +34,28 @@ const EventEmitter = require('events').EventEmitter
 export default {
   name: 'hole-list',
   props: ['holes'],
-  mounted () {
-    setInterval(() => {
-     console.log(this.holes.length);
-    }, 1000)
+  /*data: () => {
+    return {
+      holes
+    }
+  },*/
+  mounted: () => {
+    
   }
 }
 
 </script>
 
 <style scoped>
+.holes-wrapper {
+  display: block;
+  overflow-y: scroll;
+  height: 400px;
+}
 table {
   border-top: 1px solid #dfdfdf;
   border-left: 1px solid #dfdfdf;
+  font-size: 10px;
 }
 td, th {
   padding: 5px;
@@ -54,5 +66,8 @@ th {
   background: #555;
   font-weight: normal;
   color: #fff;
+}
+tr.highlighted {
+  opacity: 0.8;
 }
 </style>
