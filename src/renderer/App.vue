@@ -75,45 +75,71 @@
     methods: {
       fileSelected (file) {
         const fileContents = fs.readFileSync(file.path).toString()
-        
+        console.log('File selected, loading holes')
         HoleExtractor(fileContents)
         .then((holes) => {
-          this.holes = holes.map((hole) => {
+          holes.sort((a, b) => a.d - b.d)
+
+          // Add extra properties to be populated later
+          this.holes = holes.map((hole, i) => {
+            hole.index = i
+            hole.optimizedIndex = i
             hole.hue = 0
             hole.highlighted = false
             return hole
           })
-          this.holes = this.holes.sort((a, b) => a.d - b.d)
         })
         .catch((e) => {throw e})
       }
     },
     watch: {
-      holes () {
-        let holeSizes = this.holes.reduce((initial, hole) => {
-          if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
-          return initial
-        }, []).sort()
-        
-        const min = holeSizes[0]
-        const max = holeSizes[holeSizes.length-1]
-        const delta = max-min
+      holes: {
+        handler (val, oldVal) {
+          /* Check for differences in:
+           * hole.optimizedIndex  When the order has been changed by the path generator
+           */
+          if(val.length == oldVal.length) {
+            const anyChange = val.reduce((difference, item, index) => {
+              if(difference) return true;
+              if(item.optimizedIndex != oldVal[index].optimizedIndex) return true;
+              return false;
+            }, false)
 
-        holeSizes = holeSizes.map((hole) => {
-          const hue = (380 * (hole-min) / delta) % 360;
-
-          return {
-            d: hole,
-            hue: hue
+            if(!anyChange) return;
           }
-        })
+          //console.log('App.vue: Watcher triggered', val.length, oldVal.length)
 
-        this.holeSizes = holeSizes
+          // Generate array with the hole sizes
+          let holeSizes = this.holes.reduce((initial, hole) => {
+            if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
+            return initial
+          }, []).sort()
+          
+          // Generate colors per hole size
+          const min = holeSizes[0]
+          const max = holeSizes[holeSizes.length-1]
+          const delta = max-min
+          holeSizes = holeSizes.map((hole) => {
+            const hue = (380 * (hole-min) / delta) % 360;
 
-        this.holes.forEach((hole) => {
-          const holeSize = holeSizes.find((h) => h.d == hole.d)
-          hole.hue = holeSize.hue
-        })
+            return {
+              d: hole,
+              hue: hue
+            }
+          })
+
+          this.holeSizes = holeSizes
+
+          // Apply colors to holes
+          this.holes.forEach((hole, index) => {
+            const holeSize = holeSizes.find((h) => h.d == hole.d)
+            hole.hue = holeSize.hue
+          })
+
+          // Sort holes by optimizedIndex
+          //this.holes.sort((a, b) => a.optimizedIndex - b.optimizedIndex)
+        },
+        deep: true
       }
     }
   }

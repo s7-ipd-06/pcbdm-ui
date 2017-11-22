@@ -7,9 +7,9 @@
           <th>Name</th><th>Total path distance</th>
       </thead>
       <tbody>
-        <tr v-for="path in paths" :class="{ 'active': path.selected }" @click="selectPath(path)">
-          <td>{{ path.name }}</td>
-          <td>{{ path.totalDistance }}</td>
+        <tr v-for="gen in generators" :class="{ 'active': gen.selected }" @click="selectPath(gen)">
+          <td>{{ gen.name }}</td>
+          <td>{{ gen.totalDistance }}</td>
         </tr>
       </tbody>
     </table>
@@ -18,17 +18,17 @@
 
 <script>
 
-var ce, c, h, w;
+const { spawn } = require('child_process');
 
 export default {
   name: 'path-generator',
   props: ['holes'],
   data: () => {
     return {
-      paths: [
-        {name: 'original', totalDistance: null, selected: false},
-        {name: 'algorithm 1', totalDistance: null, selected: false},
-        {name: 'algorithm 2', totalDistance: null, selected: false}
+      generators: [
+        {command: {cmd: 'node', args: ['./src/lib/pathgenerators/x-sorted.js']}, name: 'X sorted', totalDistance: null, selected: false, holes: []},
+        {command: {cmd: 'node', args: ['./src/lib/pathgenerators/y-sorted.js']}, name: 'Y sorted', totalDistance: null, selected: false, holes: []},
+        //{executable: 'node src/lib/pathgenerators/a1.js', name: 'Algorithm 1', totalDistance: null, selected: false, holeOrder: []},
       ]
     }
   },
@@ -38,25 +38,102 @@ export default {
     selectPath(path) {
       console.log(`Path '${path.name}' selected`)
 
+      const holeByIndex = (index) => this.holes.find((h) => h.index == index)
+
+      // Apply new order
+      path.holes.forEach((hole, index) => {
+        holeByIndex(hole.index).optimizedIndex = index
+      })
+      this.holes.sort((a, b) => a.optimizedIndex - b.optimizedIndex)
+
       path.selected = true;
-      this.emit('pathSelected', this)
+      this.$emit('pathSelected', this)
     }
   },
   watch: {
-    holes() {
-      let previousHole = null
-      let totalDistance = 0
-      this.holes.forEach((hole) => {
-        if(previousHole) {
-          const distance = Math.sqrt(Math.pow(Math.abs(hole.x-previousHole.x), 2) + Math.pow(Math.abs(hole.y-previousHole.y), 2))
-          totalDistance += distance
-        }
-        console.log(totalDistance)
-        previousHole = hole;
+    holes(val, oldVal) {
+      // Don't update if the optimizedIndexes have been changed
+      if(val.length == oldVal.length) {
+        const anyChange = val.reduce((difference, item, index) => {
+          if(difference) return true;
+          if(item.optimizedIndex != oldVal[index].optimizedIndex) return true;
+          return false;
+        }, false)
+
+        if(anyChange) return;
+      }
+      console.log('PathGenerator.vue: Watcher triggered')
+      // Sort holes back to original index
+      let holesNormalized = this.holes.slice(0).sort((a, b) => a.index - b.index)
+
+      // Recalculate paths when holes are updated
+      this.generators.forEach((gen) => {
+        let holesRange = [];
+
+        let optimizedHoles = [];
+
+        holesNormalized.forEach((hole, index, array) => {
+          const previousHole = array[index-1]
+
+          if(!previousHole) {
+            holesRange.push(hole)
+            return;
+          }
+          
+          if(hole.d != previousHole.d || index == array.length-1) {
+            if(index == array.length-1) holesRange.push(hole)
+
+            const child = spawn(gen.command.cmd, gen.command.args);
+
+            child.stdin.write(JSON.stringify(holesRange))
+            child.stdin.write(Buffer.from([0x0A, 0x0D]))
+            child.stdin.end()
+
+            child.on('error', (e) => {
+              console.log('error')
+              console.error(e)
+            })
+
+            child.on('exit', (e) => {
+              console.log('exit', e)
+            })
+
+            child.stdout.on('data', (buff) => {
+              const sortedRange = JSON.parse(buff.toString())
+              
+              optimizedHoles = [...optimizedHoles, ...sortedRange]
+              
+              if(optimizedHoles.length == holesNormalized.length) {
+                gen.holes = optimizedHoles
+
+                // Calculate path distance
+                let previousHole = null
+                let totalDistance = 0
+                gen.holes.forEach((hole) => {
+                  if(previousHole) {
+                    const distance = Math.sqrt(Math.pow(Math.abs(hole.x-previousHole.x), 2) + Math.pow(Math.abs(hole.y-previousHole.y), 2))
+                    totalDistance += distance
+                  }
+                  previousHole = hole;
+                })
+                
+                totalDistance = Math.round(totalDistance)
+                
+                gen.totalDistance = totalDistance
+              }
+            });
+
+            child.on('close', () => {
+              //console.log(`Path generator ${gen.name} executed`)
+            })
+            
+
+            holesRange = (typeof last != 'undefined' ? [last] : [])
+          }
+
+          holesRange.push(hole)
+        })
       })
-      totalDistance = Math.round(totalDistance)
-      console.log(totalDistance)
-      this.paths[0].totalDistance = totalDistance
     }
   }
 }

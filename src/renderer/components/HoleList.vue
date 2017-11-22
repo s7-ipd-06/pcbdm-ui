@@ -6,16 +6,20 @@
       <table cellpadding="0" cellspacing="0">
         <thead>
           <tr>
+            <th>#</th>
             <th>x</th>
             <th>y</th>
             <th>diameter</th>
+            <th>optimizedIndex</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="hole in holes" :class="{ 'active': hole.selected, 'highlighted': hole.highlighted }"  :style="{ 'background-color': 'hsl(' + hole.hue + ', 100%, 95%)' }" @mouseover="hole.highlighted = true" @mouseout="hole.highlighted = false" >
+            <td>{{ hole.index }}</td>
             <td>{{ hole.x }}</td>
             <td>{{ hole.y }}</td>
             <td>{{ hole.d }}</td>
+            <td>{{ hole.optimizedIndex }}</td>
           </tr>
         </tbody>
       </table>
