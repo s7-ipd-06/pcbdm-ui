@@ -15,6 +15,17 @@ function F(n) {
   return result
 }
 
+function rotate(point, rotation) {
+  const radians = (Math.PI / 180) * rotation
+  const cos = Math.cos(radians)
+  const sin = Math.sin(radians)
+  const nx = cos * point.x + sin * point.y
+  const ny = cos * point.y - sin * point.x
+  point.x = nx
+  point.y = ny
+  return point
+}
+
 export default function(fileString) {
   return new Promise((resolve, reject) => {
     parseXML(fileString, (err, result) => {
@@ -44,16 +55,7 @@ export default function(fileString) {
         let packageHoles = extractPackageHoles(pkg)
 
         // Rotate package holes
-        packageHoles = packageHoles.map((hole) => {
-          const radians = (Math.PI / 180) * rotation
-          const cos = Math.cos(radians)
-          const sin = Math.sin(radians)
-          const nx = cos * hole.x + sin * hole.y
-          const ny = cos * hole.y - sin * hole.x
-          hole.x = nx
-          hole.y = ny
-          return hole
-        })
+        packageHoles = packageHoles.map((hole) => rotate(hole, rotation))
 
         // Translate
         .map((hole) => {

@@ -47,7 +47,14 @@ function render() {
 
   let lastHole;
   this.holes.forEach((hole, i) => {
-    if(!lastHole) {
+    // End previous
+    if(lastHole && lastHole.d != hole.d) {
+      c.stroke()
+      c.closePath()
+    }
+
+    // Start
+    if(!lastHole || lastHole.d != hole.d) {
       c.beginPath()
       c.strokeStyle = `hsl(${hole.hue}, 50%, 50%)`
       c.moveTo(us(hole.x), us(hole.y)) 
@@ -55,16 +62,9 @@ function render() {
       c.lineTo(us(hole.x), us(hole.y))
     }
 
-    if(lastHole) {
-      if(lastHole.d != hole.d) {
-        lastHole = null
-        c.stroke()
-        c.closePath()
-      }
-    } else {
-      lastHole = hole
-    }
+    lastHole = hole
   })
+  // End
   c.stroke()
   c.closePath()
 

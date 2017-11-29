@@ -26,8 +26,10 @@ export default {
   data: () => {
     return {
       generators: [
+        {command: {cmd: 'node', args: ['./src/lib/pathgenerators/original.js']}, name: 'Original', totalDistance: null, selected: false, holes: []},
         {command: {cmd: 'node', args: ['./src/lib/pathgenerators/x-sorted.js']}, name: 'X sorted', totalDistance: null, selected: false, holes: []},
         {command: {cmd: 'node', args: ['./src/lib/pathgenerators/y-sorted.js']}, name: 'Y sorted', totalDistance: null, selected: false, holes: []},
+        {command: {cmd: 'node', args: ['./src/lib/pathgenerators/diagonal-sorted.js']}, name: 'Diagonal sorted', totalDistance: null, selected: false, holes: []},
         //{executable: 'node src/lib/pathgenerators/a1.js', name: 'Algorithm 1', totalDistance: null, selected: false, holeOrder: []},
       ]
     }
@@ -63,10 +65,11 @@ export default {
         if(anyChange) return;
       }
       console.log('PathGenerator.vue: Watcher triggered')
-      // Sort holes back to original index
+      
+      // Sort holes to original index (sorted by diameter)
       let holesNormalized = this.holes.slice(0).sort((a, b) => a.index - b.index)
 
-      // Recalculate paths when holes are updated
+      // Calculate paths with algorithms
       this.generators.forEach((gen) => {
         let holesRange = [];
 
@@ -74,19 +77,15 @@ export default {
 
         holesNormalized.forEach((hole, index, array) => {
           const previousHole = array[index-1]
-
-          if(!previousHole) {
-            holesRange.push(hole)
-            return;
-          }
           
-          if(hole.d != previousHole.d || index == array.length-1) {
+          // Create groups per diameter
+          if(previousHole && (hole.d != previousHole.d || index == array.length-1)) {
             if(index == array.length-1) holesRange.push(hole)
 
             const child = spawn(gen.command.cmd, gen.command.args);
 
             child.stdin.write(JSON.stringify(holesRange))
-            child.stdin.write(Buffer.from([0x0A, 0x0D]))
+            child.stdin.write(Buffer.from([0x0A, 0x0D])) // New line
             child.stdin.end()
 
             child.on('error', (e) => {
@@ -95,7 +94,7 @@ export default {
             })
 
             child.on('exit', (e) => {
-              console.log('exit', e)
+              //console.log('exit', e)
             })
 
             child.stdout.on('data', (buff) => {
@@ -103,7 +102,26 @@ export default {
               
               optimizedHoles = [...optimizedHoles, ...sortedRange]
               
+              // Check whether all holes have been processed
               if(optimizedHoles.length == holesNormalized.length) {
+                // Reorder the groups by diameter because they are not processed synchronously
+                let holeGroups = optimizedHoles.reduce((groups, hole) => {
+                  let group = groups.find((group) => group.d == hole.d)
+                  if(!group) {
+                    groups.push({ d: hole.d, holes: [] })
+                    group = groups[groups.length-1]
+                  }
+
+                  group.holes.push(hole)
+                  return groups
+                }, [])
+                .sort((a, b) => a.d - b.d)
+
+                optimizedHoles = holeGroups.reduce((holes, group) => {
+                  return [...holes, ...group.holes]
+                }, [])
+
+
                 gen.holes = optimizedHoles
 
                 // Calculate path distance
@@ -111,8 +129,10 @@ export default {
                 let totalDistance = 0
                 gen.holes.forEach((hole) => {
                   if(previousHole) {
-                    const distance = Math.sqrt(Math.pow(Math.abs(hole.x-previousHole.x), 2) + Math.pow(Math.abs(hole.y-previousHole.y), 2))
-                    totalDistance += distance
+                    if(previousHole.d == hole.d) {
+                      const distance = Math.sqrt(Math.pow(Math.abs(hole.x-previousHole.x), 2) + Math.pow(Math.abs(hole.y-previousHole.y), 2))
+                      totalDistance += distance
+                    }
                   }
                   previousHole = hole;
                 })
@@ -124,16 +144,31 @@ export default {
             });
 
             child.on('close', () => {
-              //console.log(`Path generator ${gen.name} executed`)
+              console.log(`Path generator ${gen.name} executed`)
             })
-            
 
             holesRange = (typeof last != 'undefined' ? [last] : [])
           }
 
           holesRange.push(hole)
+
         })
       })
+    },
+    generators: {
+      handler (val, oldVal) {
+        // Don't update if the totalDistance has changed
+        const anyChange = val.reduce((difference, item, index) => {
+          if(difference) return true;
+          if(item.totalDistance != oldVal[index].totalDistance) return true;
+          return false;
+        }, false)
+        if(anyChange) return;
+
+        this.generators.sort((a, b) => {
+          return a.totalDistance - b.totalDistance
+        })
+      }
     }
   }
 }
