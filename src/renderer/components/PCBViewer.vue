@@ -1,6 +1,6 @@
 <template>
   <div id="pcb-viewer">
-    <canvas id="viewer" width="420" height="300"></canvas>
+    <canvas id="viewer"></canvas>
   </div>
 </template>
 
@@ -12,77 +12,17 @@ const Path = require('path')
 const isXML = require('is-xml')
 const eagle2svg = require('eagle2svg')
 const EventEmitter = require('events').EventEmitter
+const plotgrid = require('plot-grid')
 
-var ce, c, h, w;
-
-class File extends EventEmitter {
-  constructor(path) {
-    super(path)
-
-    this.path = path
-    this.pathInfo = Path.parse(path)
-    this.selected = false
-    this.name = this.pathInfo.base
-    this.thumbnail = ''
-
-    // Get extension for future use
-    const pathInfo = Path.parse(path)
-
-    // Load file
-    this.contents = fs.readFileSync(path).toString()
-
-    // Generate & save the thumbnail
-    this.generateThumbnail()
-    .then((thumbnailContents) => {
-      const thumbPath = '/temp/' + uniqid() + '.svg'
-      fs.writeFile(__static + thumbPath, thumbnailContents, () => {
-        this.thumbnail = '/static' + thumbPath
-      })
-    })
-    .catch((err) => {
-      console.error(err)
-      throw err
-    })
-  }
-
-  /**
-   * Generates the thumbnail based on the path
-   */
-  generateThumbnail() {
-    return new Promise((resolve, reject) => {
-      if(!isXML(this.contents)) reject('No XML')
-      if(this.pathInfo.ext != '.brd') reject('No .brd file')
-      
-      eagle2svg(this.contents, { width: 80, height: 60 })
-      .then((result) => {
-        resolve(result)
-      })
-      .catch(reject)
-    })
-  }
-
-  select() {
-    this.selected = true;
-    this.emit('select', this)
-  }
-
-  deselect() {
-    this.selected = false;
-    this.emit('deselect')
-  }
-}
+const d3 = require('d3')
 
 export default {
   name: 'pcb-viewer',
   props: ['holes'],
   mounted () {
-    ce = document.getElementById('viewer')
-    c = ce.getContext('2d')
-    h = parseInt(ce.getAttribute('height'))
-    w = parseInt(ce.getAttribute('width'))
+    setupCanvas.bind(this)()
 
-    window.requestAnimationFrame(render.bind(this));
-    
+    // File drop
     var dropzone = this.$el;
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault() // Prevent the page from actually trying to open and view the file
@@ -91,7 +31,7 @@ export default {
       dropzone.classList.remove('dropTarget')
 
       for (let f of e.dataTransfer.files) {
-        loadFile.bind(this)(f.path)
+        this.loadFile(f.path)
       }
     })
 
@@ -107,21 +47,41 @@ export default {
 
     // Add test file when in development mode
     if(process.env.NODE_ENV == 'development') {
-      loadFile.bind(this)(__static + '/main.brd')
+      this.loadFile(__static + '/main.brd')
+    }
+  },
+  methods: {
+    loadFile (path) {
+      const pathInfo = Path.parse(path)
+
+      const file = {
+        name: pathInfo.base,
+        path: path,
+        body: fs.readFileSync(path).toString()
+      }
+      
+      this.$emit('fileLoaded', file)
     }
   }
 }
 
+var ce, c, h, w
+var cTransform;
 
+function setupCanvas() {
+  ce = document.getElementById('viewer')
+  c = ce.getContext('2d')
+  window.addEventListener('resize', function setCanvasSize() {
+    h = ce.clientHeight;
+    w = ce.clientWidth;
+    ce.setAttribute('height', h)
+    ce.setAttribute('width', w)
+    return setCanvasSize
+  }())
 
-function loadFile(path) {
-  const newFile = new File(path)
+  d3.select(ce).call(d3.zoom().scaleExtent([1/8, 8]).on('zoom', (e) => cTransform = d3.event.transform))
 
-  this.file = newFile
-
-  this.$emit('fileLoaded', newFile)
-
-  return newFile
+  window.requestAnimationFrame(render.bind(this));
 }
 
 // Unit scale
@@ -130,27 +90,22 @@ function us(value) {
 }
 
 function render() {
-  c.clearRect(0, 0, w, h)
   c.save()
+  c.clearRect(0, 0, w, h)
+  if(cTransform) {
+    c.translate(cTransform.x, cTransform.y);
+    c.scale(cTransform.k, cTransform.k);
+  }
 
-  this.holes.forEach((hole) => {
-    c.beginPath()
-    c.arc(us(hole.x), us(hole.y), (hole.highlighted ? 2 : 1)*us(hole.d)/2, 0, 2*Math.PI)
-    c.fillStyle = '#444'
-    c.fill()
-    c.closePath()
-  })
-
+  // Draw paths
   let lastHole;
   this.holes.forEach((hole, i) => {
-    // End previous
-    if(lastHole && lastHole.d != hole.d) {
+    if(lastHole && lastHole.d != hole.d) { // End previous
       c.stroke()
       c.closePath()
     }
 
-    // Start
-    if(!lastHole || lastHole.d != hole.d) {
+    if(!lastHole || lastHole.d != hole.d) { // Start
       c.beginPath()
       c.strokeStyle = `hsl(${hole.hue}, 50%, 50%)`
       c.moveTo(us(hole.x), us(hole.y)) 
@@ -160,9 +115,17 @@ function render() {
 
     lastHole = hole
   })
-  // End
-  c.stroke()
+  c.stroke() // End
   c.closePath()
+
+  // Draw holes
+  this.holes.forEach((hole) => {
+    c.beginPath()
+    c.arc(us(hole.x), us(hole.y), (hole.highlighted ? 2 : 1)*us(hole.d)/2, 0, 2*Math.PI)
+    c.fillStyle = '#444'
+    c.fill()
+    c.closePath()
+  })
 
 
   c.restore()
@@ -172,5 +135,9 @@ function render() {
 
 <style scoped>
 
+#pcb-viewer, #viewer {
+  height: 100%;
+  width: 100%;
+}
 
 </style>

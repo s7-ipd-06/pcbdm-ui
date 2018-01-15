@@ -53,10 +53,13 @@
   },
   "dependencies": {
     "bootstrap": "^3.3.7",
+    "d3": "^4.12.2",
     "eagle2svg": "0.0.4",
     "file-type": "^6.2.0",
     "is-xml": "^0.1.0",
     "latest": "^0.2.0",
+    "pan-zoom": "^2.0.0",
+    "plot-grid": "^2.4.2",
     "serialport": "^4.0.7",
     "uniqid": "^4.1.1",
     "vue": "^2.3.3"

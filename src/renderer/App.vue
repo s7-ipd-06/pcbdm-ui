@@ -113,7 +113,7 @@
     methods: {
       fileLoaded (file) {
         const fileContents = fs.readFileSync(file.path).toString()
-        console.log('File loaded, loading holes')
+        console.log('App: PCBViewer@fileLoaded')
         HoleExtractor(fileContents)
         .then((holes) => {
           holes.sort((a, b) => a.d - b.d)
@@ -216,18 +216,21 @@ aside {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 280px;
+  width: 240px;
 
   border-color: #d7d7d7;
   border-style: solid;
   border-width: 0;
   background: rgba(147, 128, 108, 0.098);
-  box-shadow: inset 0 0 16px 0px #d0d0d0;
+/*  box-shadow: inset 0 0 16px 0px #d0d0d0;*/
 }
 
 #main {
-  margin-left: 280px;
-  padding: 10px;
+  position: absolute;
+  left: 240px;
+  right: 240px;
+  top: 0;
+  bottom: 0;
 }
 
 aside h1 {
@@ -259,10 +262,10 @@ aside h1 {
   float: left;
 }
 
-.holes-list {
+#hole-list {
   display: block;
   overflow-y: scroll;
-  height: 400px;
+  height: 100%;
 }
   table {
     border-top: 1px solid #dfdfdf;
