@@ -27,23 +27,23 @@
 
     <div id="jog-controls">
       <div class="keypad-wrapper">
-        <div class="key key-tl" @click="sendMessage('G0 Z100')"></div>
+        <div class="key key-tl" @click="sendMessage('G0 X100000')"></div>
         <div class="key key-tr"></div>
         <div style="clear: both"></div>
         <div class="key key-bl"></div>
-        <div class="key key-br" @click="sendMessage('G0 Z-100')"></div>
+        <div class="key key-br" @click="sendMessage('G0 X-100000')"></div>
         <div class="keypad">
-          <div class="key key-tl" @click="sendMessage('G0 Z10')"></div>
+          <div class="key key-tl" @click="sendMessage('G0 X10000')"></div>
           <div class="key key-tr"></div>
           <div style="clear: both"></div>
           <div class="key key-bl"></div>
-          <div class="key key-br" @click="sendMessage('G0 Z-10')"></div>
+          <div class="key key-br" @click="sendMessage('G0 X-10000')"></div>
           <div class="keypad">
-            <div class="key key-tl" @click="sendMessage('G0 Z1')"></div>
+            <div class="key key-tl" @click="sendMessage('G0 X1000')"></div>
             <div class="key key-tr"></div>
             <div style="clear: both"></div>
             <div class="key key-bl"></div>
-            <div class="key key-br" @click="sendMessage('G0 Z-1')"></div>
+            <div class="key key-br" @click="sendMessage('G0 X-1000')"></div>
           </div>
         </div>
       </div>

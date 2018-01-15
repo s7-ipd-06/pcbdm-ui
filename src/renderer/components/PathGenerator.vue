@@ -121,7 +121,6 @@ export default {
                   return [...holes, ...group.holes]
                 }, [])
 
-
                 gen.holes = optimizedHoles
 
                 // Calculate path distance
