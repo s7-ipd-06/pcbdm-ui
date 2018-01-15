@@ -1,6 +1,6 @@
 <template>
   <div id="pcb-viewer">
-    <canvas id="viewer"></canvas>
+    <svg id="viewer"></svg>
   </div>
 </template>
 
@@ -18,7 +18,7 @@ const d3 = require('d3')
 
 export default {
   name: 'pcb-viewer',
-  props: ['holes'],
+  props: ['holes', 'holeSizes'],
   mounted () {
     setupCanvas.bind(this)()
 
@@ -65,22 +65,34 @@ export default {
   }
 }
 
-var ce, c, h, w
-var cTransform;
+var se, s, h, w
+var mg; // master g-element
 
 function setupCanvas() {
-  ce = document.getElementById('viewer')
-  c = ce.getContext('2d')
+  se = document.getElementById('viewer')
+  s = d3.select(se)
   window.addEventListener('resize', function setCanvasSize() {
-    h = ce.clientHeight;
-    w = ce.clientWidth;
-    ce.setAttribute('height', h)
-    ce.setAttribute('width', w)
+    h = se.clientHeight;
+    w = se.clientWidth;
+    se.setAttribute('height', h)
+    se.setAttribute('width', w)
     return setCanvasSize
   }())
 
-  d3.select(ce).call(d3.zoom().scaleExtent([1/8, 8]).on('zoom', (e) => cTransform = d3.event.transform))
+  mg = s.append('g');
 
+  d3.select(se).call(d3.zoom().scaleExtent([1/8, 8]).on('zoom', (e) => mg.attr('transform', d3.event.transform)));
+
+  /*s.selectAll('circle')
+  .data(this.holes)
+  .enter().append('circle')
+    .attr('cx', function(h) { return us(h.x); })
+    .attr('cy', function(h) { return us(h.y); })
+    .attr('r', (h) => (h.highlighted ? 2 : 1)*us(h.d)/2);*/
+  /*
+  <polyline fill="none" stroke="black" 
+      points="20,100 40,60 70,80 100,20"/>
+      */
   window.requestAnimationFrame(render.bind(this));
 }
 
@@ -90,15 +102,46 @@ function us(value) {
 }
 
 function render() {
-  c.save()
+  var holes = this.holes;
+  var holeSizes = this.holeSizes;
+
+  if(holeSizes) {
+    var polyline = mg.selectAll('polyline')
+      .data(this.holeSizes);
+    
+      polyline.exit().remove();
+      
+      polyline.enter().append('polyline')
+        .attr('fill', 'none')
+      .merge(polyline)
+        .attr('stroke', (hs) => `hsl(${hs.hue}, 50%, 50%)`)
+        .attr('points', (hs) => hs.holes.reduce((i, h) => {
+          i.push(us(h.x) + ' ' + us(h.y));
+          return i
+        }, []))
+  }
+  
+  var circle = mg.selectAll('circle')
+    .data(holes);
+  
+    circle.exit().remove();
+    
+    circle.enter().append('circle')
+      .attr('fill', '#444')
+    .merge(circle)
+      .attr('cx', (h) => us(h.x))
+      .attr('cy', (h) => us(h.y))
+      .attr('r', (h) => (h.highlighted ? 2 : 1)*us(h.d)/2)
+
+  /*c.save()
   c.clearRect(0, 0, w, h)
   if(cTransform) {
     c.translate(cTransform.x, cTransform.y);
     c.scale(cTransform.k, cTransform.k);
-  }
+  }*/
 
   // Draw paths
-  let lastHole;
+  /*let lastHole;
   this.holes.forEach((hole, i) => {
     if(lastHole && lastHole.d != hole.d) { // End previous
       c.stroke()
@@ -116,10 +159,10 @@ function render() {
     lastHole = hole
   })
   c.stroke() // End
-  c.closePath()
+  c.closePath()*/
 
   // Draw holes
-  this.holes.forEach((hole) => {
+  /*this.holes.forEach((hole) => {
     c.beginPath()
     c.arc(us(hole.x), us(hole.y), (hole.highlighted ? 2 : 1)*us(hole.d)/2, 0, 2*Math.PI)
     c.fillStyle = '#444'
@@ -128,7 +171,7 @@ function render() {
   })
 
 
-  c.restore()
+  c.restore()*/
   window.requestAnimationFrame(render.bind(this));
 }
 </script>

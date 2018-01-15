@@ -26,7 +26,7 @@
     </aside>
 
     <section id="main">
-      <pcb-viewer @fileLoaded="fileLoaded" :holes="holes"></pcb-viewer>
+      <pcb-viewer @fileLoaded="fileLoaded" :holes="holes" :holeSizes="holeSizes"></pcb-viewer>
     </section>
 
     <aside id="sidebar-right">
@@ -75,6 +75,7 @@
     data () {
       return {
         holes: [],
+        holeSizes: [],
         pc: { // Proces Controller
           playing: false
         }
@@ -83,8 +84,8 @@
     computed: {
       progress () {
         return 25;
-      }
-      /*holeSizes () {
+      }/*,
+      holeSizes () {
         let holeSizes = this.holes.reduce((initial, hole) => {
           if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
           return initial
@@ -149,25 +150,25 @@
 
           // Generate array with the hole sizes
           let holeSizes = this.holes.reduce((initial, hole) => {
-            if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
+            if(!initial.find((hs) => hs.d == hole.d)) initial.push({
+              d: hole.d,
+              holes: []
+            })
+            initial[initial.length-1].holes.push(hole)
             return initial
-          }, []).sort()
+          }, []).sort((a, b) => a.d - b.d)
           
           // Generate colors per hole size
-          const min = holeSizes[0]
-          const max = holeSizes[holeSizes.length-1]
+          const min = holeSizes[0].d
+          const max = holeSizes[holeSizes.length-1].d
           const delta = max-min
-          holeSizes = holeSizes.map((hole) => {
-            const hue = (380 * (hole-min) / delta) % 360;
-
-            return {
-              d: hole,
-              hue: hue
-            }
+          holeSizes = holeSizes.map((hs) => {
+            hs.hue = (380 * (hs.d-min) / delta) % 360;
+            return hs;
           })
 
           this.holeSizes = holeSizes
-
+          
           // Apply colors to holes
           this.holes.forEach((hole, index) => {
             const holeSize = holeSizes.find((h) => h.d == hole.d)
