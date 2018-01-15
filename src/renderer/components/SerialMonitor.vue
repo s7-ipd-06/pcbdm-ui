@@ -71,11 +71,12 @@ export default {
     }
   },
   created () {
-    //setInterval(() => {
+    // Periodically refresh list of serial ports
+    setInterval(() => {
       SerialPort.list((err, result) => {
         this.ports = result
       })
-    //}, 1000)
+    }, 1000)
   },
   methods: {
     connect () {

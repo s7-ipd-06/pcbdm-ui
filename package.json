@@ -52,6 +52,7 @@
     }
   },
   "dependencies": {
+    "bootstrap": "^3.3.7",
     "eagle2svg": "0.0.4",
     "file-type": "^6.2.0",
     "is-xml": "^0.1.0",

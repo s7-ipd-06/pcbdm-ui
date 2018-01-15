@@ -1,32 +1,68 @@
 <template>
   <div id="app">
     <aside id="sidebar-left">
-      <h1>Files</h1>
-      <file-list @fileSelected="fileSelected"></file-list>
+      <div id="hole-list">
+        <table cellpadding="0" cellspacing="0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>x</th>
+              <th>y</th>
+              <th>diameter</th>
+              <th>optimizedIndex</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="hole in holes" :class="{ 'active': hole.selected, 'highlighted': hole.highlighted }"  :style="{ 'background-color': 'hsl(' + hole.hue + ', 100%, 95%)' }" @mouseover="hole.highlighted = true" @mouseout="hole.highlighted = false" >
+              <td>{{ hole.index }}</td>
+              <td>{{ hole.x }}</td>
+              <td>{{ hole.y }}</td>
+              <td>{{ hole.d }}</td>
+              <td>{{ hole.optimizedIndex }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </aside>
 
     <section id="main">
-      <pcb-viewer :holes="holes"></pcb-viewer>
-      <path-generator :holes="holes"></path-generator>
-      <div style="clear: both"></div>
-      <br />
-      <hole-list :holes="holes"></hole-list>
+      <pcb-viewer @fileLoaded="fileLoaded" :holes="holes"></pcb-viewer>
     </section>
 
     <aside id="sidebar-right">
-      <!-- ProcessController -->
-      <serial-monitor></serial-monitor>
+      <div id="process-controller">
+        <h3>main.brd</h3>
+        Filename: main.brd
+
+        Total distance, estimated drill time:
+
+        <button type="button" class="btn" id="pc-playpause">
+          <span class="glyphicon" :class="[pc.playing ? 'glyphicon-pause' : 'glyphicon-play']" aria-hidden="true"></span>
+        </button>
+        <button type="button" class="btn" id="pc-stop">
+          <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+        </button>
+
+        <div class="progress">
+          <div class="progress-bar" role="progressbar" :style="{ width: progress + '%' }" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">{{ progress }}%</div>
+        </div>
+
+        Drilled 0 of 24 holes.<br />
+        Drilled 900 of 14343 mm<br />
+        Average time per hole: 2.4 s<br />
+        Estimated drill time left: 4:32<br />
+        <br />
+      </div>
+
+      <!-- <serial-monitor></serial-monitor> -->
       <!-- ManualControls -->
     </aside>
   </div>
 </template>
 
 <script>
-  import FileList from '@/components/FileList'
-  import HoleList from '@/components/HoleList'
   import SerialMonitor from '@/components/SerialMonitor'
   import PcbViewer from '@/components/PCBViewer'
-  import PathGenerator from '@/components/PathGenerator'
 
   const fs = require('fs')
   import HoleExtractor from '../lib/hole-extractor.js'
@@ -34,19 +70,21 @@
   export default {
     name: 'pcbdm-ui',
     components: {
-      FileList,
-      HoleList,
-      SerialMonitor,
-      PcbViewer,
-      PathGenerator
+      PcbViewer
     },
     data () {
       return {
-        holes: []
+        holes: [],
+        pc: { // Proces Controller
+          playing: false
+        }
       }
     },
-    /*computed: {
-      holeSizes () {
+    computed: {
+      progress () {
+        return 25;
+      }
+      /*holeSizes () {
         let holeSizes = this.holes.reduce((initial, hole) => {
           if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
           return initial
@@ -68,14 +106,14 @@
         this.holeSizes = holeSizes
 
         return holeSizes
-      }
-    },*/
+      }*/
+    },
     mounted () {
     },
     methods: {
-      fileSelected (file) {
+      fileLoaded (file) {
         const fileContents = fs.readFileSync(file.path).toString()
-        console.log('File selected, loading holes')
+        console.log('File loaded, loading holes')
         HoleExtractor(fileContents)
         .then((holes) => {
           holes.sort((a, b) => a.d - b.d)
@@ -220,5 +258,29 @@ aside h1 {
 #path-generator {
   float: left;
 }
+
+.holes-list {
+  display: block;
+  overflow-y: scroll;
+  height: 400px;
+}
+  table {
+    border-top: 1px solid #dfdfdf;
+    border-left: 1px solid #dfdfdf;
+    font-size: 10px;
+  }
+  td, th {
+    padding: 5px;
+    border-bottom: 1px solid #dfdfdf;
+    border-right: 1px solid #dfdfdf;
+  }
+  th {
+    background: #555;
+    font-weight: normal;
+    color: #fff;
+  }
+  tr.highlighted {
+    opacity: 0.8;
+  }
 
 </style>
