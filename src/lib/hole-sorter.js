@@ -7,11 +7,11 @@ const { spawn } = require('child_process');
 const EventEmitter = require('events').EventEmitter
 
 var algorithms = [
-  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/original.js']}, name: 'Original', totalDistance: null, selected: false, holes: []},
-  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/x-sorted.js']}, name: 'X sorted', totalDistance: null, selected: false, holes: []},
-  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/y-sorted.js']}, name: 'Y sorted', totalDistance: null, selected: false, holes: []},
-  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/diagonal-sorted.js']}, name: 'Diagonal sorted', totalDistance: null, selected: false, holes: []},
-  //{executable: 'node src/lib/pathgenerators/a1.js', name: 'Algorithm 1', totalDistance: null, selected: false, holeOrder: []},
+  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/original.js']}, name: 'by original order', totalDistance: null, selected: false, holes: []},
+  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/x-sorted.js']}, name: 'by X-coordinate', totalDistance: null, selected: false, holes: []},
+  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/y-sorted.js']}, name: 'by Y-coordinate', totalDistance: null, selected: false, holes: []},
+  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/diagonal-sorted-x.js']}, name: 'diagonally X', totalDistance: null, selected: false, holes: []},
+  {command: {cmd: 'node', args: ['./src/lib/hole-sorters/diagonal-sorted-y.js']}, name: 'diagonally Y', totalDistance: null, selected: false, holes: []}
 ]
 
 class HoleSorter extends EventEmitter {
@@ -34,7 +34,9 @@ class HoleSorter extends EventEmitter {
     var sortedGroups = [];
     holesByDiameter.forEach((g) => {
       this._sortGroup(g.holes)
-      .then((sortedHoles) => {
+      .then((result) => {
+        console.log(`Holes with diameter ${g.d} sorted ${result.algo.name} with a total distance of ${result.totalDistance}`)
+        var sortedHoles = result.holes;
         sortedGroups.push({ holes: sortedHoles })
 
         if(sortedGroups.length == holesByDiameter.length) {
@@ -63,7 +65,7 @@ class HoleSorter extends EventEmitter {
         })
 
         child.on('exit', (e) => {
-          //console.log('exit', e)
+          if(e != 0) throw new Error(`Hole sorter ${algo.name} crashed`)
         })
 
         child.on('close', () => {
@@ -95,6 +97,7 @@ class HoleSorter extends EventEmitter {
           })
 
           var result = {
+            algo: algo,
             holes: sortedHoles,
             totalDistance: Math.round(totalDistance)
           }
@@ -106,7 +109,9 @@ class HoleSorter extends EventEmitter {
               return a.totalDistance - b.totalDistance
             })
 
-            resolve(results[0].holes)
+            results.forEach(r => console.log(`Diameter ${r.holes[0].d} sorted ${r.algo.name} total distance: ${r.totalDistance}`))
+
+            resolve(results[0])
           }
         })
       })

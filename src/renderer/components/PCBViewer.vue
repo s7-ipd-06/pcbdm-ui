@@ -38,7 +38,7 @@ const d3 = require('d3')
 
 export default {
   name: 'pcb-viewer',
-  props: ['holes', 'holeSizes'],
+  props: ['holes', 'path'],
   mounted () {
     setupCanvas.bind(this)()
 
@@ -51,7 +51,7 @@ export default {
       dropzone.classList.remove('dropTarget')
 
       for (let f of e.dataTransfer.files) {
-        this.loadFile(f.path)
+        this.$emit('loadFile', f.path)
       }
     })
 
@@ -64,27 +64,6 @@ export default {
       e.preventDefault() // Prevent the page from actually trying to open and view the file
       e.stopPropagation() // Stop the event from propagating to parent elements
     })
-
-    // Add test file when in development mode
-    if(process.env.NODE_ENV == 'development') {
-      var files = fs.readdirSync(__static + '/testboards/');
-      var randomFile = files[Math.floor(Math.random()*files.length)]
-      randomFile = 'wagencontroller.brd';
-      this.loadFile(__static + '/testboards/' + randomFile)
-    }
-  },
-  methods: {
-    loadFile (path) {
-      const pathInfo = Path.parse(path)
-
-      const file = {
-        name: pathInfo.base,
-        path: path,
-        body: fs.readFileSync(path).toString()
-      }
-      
-      this.$emit('fileLoaded', file)
-    }
   }
 }
 
@@ -255,25 +234,21 @@ function updateRulers() {
 
 function updatePCB(g) {
   var holes = this.holes;
-  var holeSizes = this.holeSizes;
+  var path = this.path;
 
-  if(holeSizes) {
-    var polyline = g.selectAll('polyline')
-      .data(this.holeSizes);
+  var line = g.selectAll('line')
+    .data(path);
     
-      polyline.exit().remove();
+    line.exit().remove();
       
-      polyline.enter().append('polyline')
-        .attr('fill', 'none')
-      .merge(polyline)
-        .attr('stroke', (hs) => `hsl(${hs.hue}, 50%, 50%)`)
-        .attr('stroke-width', 2)
-        .attr('stroke-linejoin', 'round')
-        .attr('points', (hs) => hs.holes.reduce((i, h) => {
-          i.push(us(h.x) + ' ' + us(h.y));
-          return i
-        }, []))
-  }
+    line.enter().append('line')
+      .merge(line)
+        .attr('stroke-width', p => p.w)
+        .attr('stroke', p => p.c)
+        .attr('x1', p => us(p.x))
+        .attr('y1', p => us(p.y))
+        .attr('x2', p => us(p.x2))
+        .attr('y2', p => us(p.y2))
   
   var circle = g.selectAll('circle')
     .data(holes);
@@ -281,11 +256,12 @@ function updatePCB(g) {
     circle.exit().remove();
     
     circle.enter().append('circle')
-      .attr('fill', '#444')
     .merge(circle)
+      .attr('fill', (h) => `hsl(${h.hue}, 25%, 50%)`)
       .attr('cx', (h) => us(h.x))
       .attr('cy', (h) => us(h.y))
       .attr('r', (h) => (h.highlighted ? 2 : 1)*us(h.d)/2)
+      
 }
 
 function render() {

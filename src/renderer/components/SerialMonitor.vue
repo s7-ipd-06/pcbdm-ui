@@ -47,6 +47,9 @@
           </div>
         </div>
       </div>
+      <button class="btn btn-large btn-default">
+        <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
+      </button>
     </div>
   </div>
 </template>

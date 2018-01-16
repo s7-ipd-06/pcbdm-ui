@@ -13,13 +13,13 @@ process.stdin.on('data', (buff) => {
 function generate(json) {
 	const holes = JSON.parse(json)
 
-	const angle = 0.225 * Math.PI
+	const angle = 0.2 * Math.PI
 
 	// Sort diagonally
 	holes.sort((a, b) => {
     var ar = rotate(a, angle)
     var br = rotate(b, angle)
-		return ar.x - br.x
+		return ar.y - br.y
 	})
 
 	process.stdout.write(JSON.stringify(holes))
