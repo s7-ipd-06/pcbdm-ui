@@ -9,16 +9,14 @@
               <th>x</th>
               <th>y</th>
               <th>diameter</th>
-              <th>optimizedIndex</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="hole in holes" :class="{ 'active': hole.selected, 'highlighted': hole.highlighted }"  :style="{ 'background-color': 'hsl(' + hole.hue + ', 100%, 95%)' }" @mouseover="hole.highlighted = true" @mouseout="hole.highlighted = false" >
-              <td>{{ hole.index }}</td>
+              <td>{{ hole.optimizedIndex }}</td>
               <td>{{ hole.x }}</td>
               <td>{{ hole.y }}</td>
               <td>{{ hole.d }}</td>
-              <td>{{ hole.optimizedIndex }}</td>
             </tr>
           </tbody>
         </table>
@@ -31,12 +29,11 @@
 
     <aside id="sidebar-right">
       <div id="process-controller">
-        <h3>main.brd</h3>
-        Filename: main.brd
+        <h5>{{ file.name }}</h5>
 
         Total distance, estimated drill time:
 
-        <button type="button" class="btn" id="pc-playpause">
+        <button type="button" :class="['btn', pc.playing ? 'btn-danger' : 'btn-success']" id="pc-playpause">
           <span class="glyphicon" :class="[pc.playing ? 'glyphicon-pause' : 'glyphicon-play']" aria-hidden="true"></span>
         </button>
         <button type="button" class="btn" id="pc-stop">
@@ -54,7 +51,7 @@
         <br />
       </div>
 
-      <!-- <serial-monitor></serial-monitor> -->
+      <serial-monitor></serial-monitor>
       <!-- ManualControls -->
     </aside>
   </div>
@@ -66,14 +63,23 @@
 
   const fs = require('fs')
   import HoleExtractor from '../lib/hole-extractor.js'
+  import HoleSorter from '../lib/hole-sorter.js'
 
   export default {
     name: 'pcbdm-ui',
     components: {
-      PcbViewer
+      PcbViewer,
+      SerialMonitor
     },
     data () {
       return {
+        file: {
+          name: ''
+        },
+        fileStatus: {
+          message: '',
+          type: 'default'
+        },
         holes: [],
         holeSizes: [],
         pc: { // Proces Controller
@@ -84,72 +90,19 @@
     computed: {
       progress () {
         return 25;
-      }/*,
-      holeSizes () {
-        let holeSizes = this.holes.reduce((initial, hole) => {
-          if(initial.indexOf(hole.d) == -1) initial.push(hole.d)
-          return initial
-        }, []).sort()
-        
-        const min = holeSizes[0]
-        const max = holeSizes[holeSizes.length-1]
-        const delta = max-min
-
-        holeSizes = holeSizes.map((hole) => {
-          const hue = 360 * (hole-min) / delta;
-
-          return {
-            d: hole,
-            hue: hue
-          }
-        })
-
-        this.holeSizes = holeSizes
-
-        return holeSizes
-      }*/
+      }
     },
     mounted () {
     },
     methods: {
       fileLoaded (file) {
-        const fileContents = fs.readFileSync(file.path).toString()
-        console.log('App: PCBViewer@fileLoaded')
-        HoleExtractor(fileContents)
+        console.log('App: PCBViewer@fileLoaded: ', file.path)
+        this.file = file;
+
+        HoleExtractor(file.body)
         .then((holes) => {
-          holes.sort((a, b) => a.d - b.d)
-
-          // Add extra properties to be populated later
-          this.holes = holes.map((hole, i) => {
-            hole.index = i
-            hole.optimizedIndex = i
-            hole.hue = 0
-            hole.highlighted = false
-            return hole
-          })
-        })
-        .catch((e) => {throw e})
-      }
-    },
-    watch: {
-      holes: {
-        handler (val, oldVal) {
-          /* Check for differences in:
-           * hole.optimizedIndex  When the order has been changed by the path generator
-           */
-          if(val.length == oldVal.length) {
-            const anyChange = val.reduce((difference, item, index) => {
-              if(difference) return true;
-              if(item.optimizedIndex != oldVal[index].optimizedIndex) return true;
-              return false;
-            }, false)
-
-            if(!anyChange) return;
-          }
-          //console.log('App.vue: Watcher triggered', val.length, oldVal.length)
-
-          // Generate array with the hole sizes
-          let holeSizes = this.holes.reduce((initial, hole) => {
+          // Group holes by diameter
+          let holeSizes = holes.reduce((initial, hole) => {
             if(!initial.find((hs) => hs.d == hole.d)) initial.push({
               d: hole.d,
               holes: []
@@ -168,17 +121,27 @@
           })
 
           this.holeSizes = holeSizes
-          
+
           // Apply colors to holes
-          this.holes.forEach((hole, index) => {
+          holes.forEach((hole, index) => {
             const holeSize = holeSizes.find((h) => h.d == hole.d)
             hole.hue = holeSize.hue
+            hole.index = index
           })
 
-          // Sort holes by optimizedIndex
-          //this.holes.sort((a, b) => a.optimizedIndex - b.optimizedIndex)
-        },
-        deep: true
+          this.fileStatus.message = `Sorting holes...`;
+          
+          var hs = new HoleSorter(holes)
+          .on('sorted', (sortedHoles) => {
+            // Add extra properties to be populated later
+            this.holes = sortedHoles.map((hole, i) => {
+              hole.optimizedIndex = i
+              hole.highlighted = false
+              return hole
+            })
+          })
+        })
+        .catch((e) => {throw e})
       }
     }
   }
@@ -217,7 +180,6 @@ aside {
   position: absolute;
   top: 0;
   bottom: 0;
-  width: 240px;
 
   border-color: #d7d7d7;
   border-style: solid;
@@ -229,7 +191,7 @@ aside {
 #main {
   position: absolute;
   left: 240px;
-  right: 240px;
+  right: 280px;
   top: 0;
   bottom: 0;
 }
@@ -246,11 +208,13 @@ aside h1 {
 
 #sidebar-left {
   left: 0;
+  width: 240px;
   /*border-right-width: 1px;*/
 }
 
 #sidebar-right {
   right: 0;
+  width: 280px;
   /*border-left-width: 1px;*/
 }
 
@@ -268,15 +232,22 @@ aside h1 {
   overflow-y: scroll;
   height: 100%;
 }
+  #hole-list table {
+    width: 100%;
+  }
   table {
-    border-top: 1px solid #dfdfdf;
-    border-left: 1px solid #dfdfdf;
     font-size: 10px;
   }
   td, th {
     padding: 5px;
     border-bottom: 1px solid #dfdfdf;
     border-right: 1px solid #dfdfdf;
+  }
+  tr td:last-of-type, tr th:last-of-type {
+    border-right: none;
+  }
+  tr:last-of-type {
+    border-bottom: none;
   }
   th {
     background: #555;

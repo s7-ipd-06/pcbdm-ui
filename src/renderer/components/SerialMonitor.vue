@@ -2,7 +2,7 @@
   <div id="serial-monitor">
     <div class="heading">
       <select v-model="currentPort">
-        <option disabled value="">Select serial port...</option>
+        <option value="" disabled selected="selected">Select serial port...</option>
         <option v-for="port in ports" :value="port.comName">
           {{ port.comName }}
         </option>
@@ -66,7 +66,7 @@ export default {
       ports: [],
       port: null,
       connected: false,
-      currentPort: null,
+      currentPort: '',
       messageToSend: ''
     }
   },
@@ -191,7 +191,7 @@ export default {
   }
 
 #messages {
-  height: 300px;
+  height: 250px;
   background: #fff;
   padding: 8px;
   box-shadow: inset 0 0 16px 0px #d0d0d0;

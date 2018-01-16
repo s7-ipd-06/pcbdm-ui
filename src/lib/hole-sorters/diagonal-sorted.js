@@ -11,15 +11,15 @@ process.stdin.on('data', (buff) => {
 })
 
 function generate(json) {
-	let holes = JSON.parse(json)
+	const holes = JSON.parse(json)
 
-	const angle = 0.2 * Math.PI
+	const angle = 0.225 * Math.PI
 
-	holes = holes.map((hole) => rotate(hole, angle))
-
-	// Sort by X
+	// Sort diagonally
 	holes.sort((a, b) => {
-		return a.x - b.x
+    var ar = rotate(a, angle)
+    var br = rotate(b, angle)
+		return ar.x - br.x
 	})
 
 	process.stdout.write(JSON.stringify(holes))
@@ -31,7 +31,8 @@ function rotate(point, rotation) {
   const sin = Math.sin(radians)
   const nx = cos * point.x + sin * point.y
   const ny = cos * point.y - sin * point.x
-  point.x = nx
-  point.y = ny
-  return point
+  return {
+    x: nx,
+    y: ny
+  }
 }

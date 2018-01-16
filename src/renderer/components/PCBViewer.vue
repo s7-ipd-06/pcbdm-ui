@@ -33,7 +33,6 @@ const Path = require('path')
 const isXML = require('is-xml')
 const eagle2svg = require('eagle2svg')
 const EventEmitter = require('events').EventEmitter
-const plotgrid = require('plot-grid')
 
 const d3 = require('d3')
 
@@ -68,7 +67,10 @@ export default {
 
     // Add test file when in development mode
     if(process.env.NODE_ENV == 'development') {
-      this.loadFile(__static + '/main.brd')
+      var files = fs.readdirSync(__static + '/testboards/');
+      var randomFile = files[Math.floor(Math.random()*files.length)]
+      randomFile = 'wagencontroller.brd';
+      this.loadFile(__static + '/testboards/' + randomFile)
     }
   },
   methods: {
@@ -88,7 +90,7 @@ export default {
 
 // Every unit = pixels
 function us(value) {
-  return value * 10
+  return value * 8
 }
 
 var se, s, h, w
@@ -157,7 +159,7 @@ function setupCanvas() {
 var rulerWidth = 15;
 var rulerTextOffset = 6;
 var rulerLength = 1000; // 100mm
-var tickInterval = 10; // A tick & gridline every 10mm
+var tickInterval = 5; // A tick & gridline every 10mm
 var numTicks = rulerLength/tickInterval;
 var rulerBackground = '#555'
 var rulerBorderColor = '#222'
@@ -265,6 +267,8 @@ function updatePCB(g) {
         .attr('fill', 'none')
       .merge(polyline)
         .attr('stroke', (hs) => `hsl(${hs.hue}, 50%, 50%)`)
+        .attr('stroke-width', 2)
+        .attr('stroke-linejoin', 'round')
         .attr('points', (hs) => hs.holes.reduce((i, h) => {
           i.push(us(h.x) + ' ' + us(h.y));
           return i
@@ -286,45 +290,7 @@ function updatePCB(g) {
 
 function render() {
   updatePCB.bind(this)(gpcb)
-  /*c.save()
-  c.clearRect(0, 0, w, h)
-  if(cTransform) {
-    c.translate(cTransform.x, cTransform.y);
-    c.scale(cTransform.k, cTransform.k);
-  }*/
 
-  // Draw paths
-  /*let lastHole;
-  this.holes.forEach((hole, i) => {
-    if(lastHole && lastHole.d != hole.d) { // End previous
-      c.stroke()
-      c.closePath()
-    }
-
-    if(!lastHole || lastHole.d != hole.d) { // Start
-      c.beginPath()
-      c.strokeStyle = `hsl(${hole.hue}, 50%, 50%)`
-      c.moveTo(us(hole.x), us(hole.y)) 
-    } else {
-      c.lineTo(us(hole.x), us(hole.y))
-    }
-
-    lastHole = hole
-  })
-  c.stroke() // End
-  c.closePath()*/
-
-  // Draw holes
-  /*this.holes.forEach((hole) => {
-    c.beginPath()
-    c.arc(us(hole.x), us(hole.y), (hole.highlighted ? 2 : 1)*us(hole.d)/2, 0, 2*Math.PI)
-    c.fillStyle = '#444'
-    c.fill()
-    c.closePath()
-  })
-
-
-  c.restore()*/
   window.requestAnimationFrame(render.bind(this));
 }
 </script>
