@@ -1,6 +1,27 @@
 <template>
   <div id="pcb-viewer">
-    <svg id="viewer"></svg>
+    <svg id="viewer">
+      <defs>
+        <clipPath id="clippath-pcb-area">
+          <rect x="0" y="0" class="clip-xy" width="9999" height="9999" />
+        </clipPath>
+        <clipPath id="clippath-pcb-area-y-only">
+          <rect x="0" y="0" class="clip-y" width="9999" height="9999" />
+        </clipPath>
+      </defs>
+      <g id="g-xfixed"></g>
+      <g id="g-yfixed-wrapper" clip-path="url(#clippath-pcb-area-y-only)">
+        <g id="g-yfixed"></g>
+      </g>
+      <g id="g-flipped"></g>
+      <g id="g-panzoom-wrapper" clip-path="url(#clippath-pcb-area)">
+        <g id="g-panzoom">
+          <g id="g-coordinatesystem">
+            <g id="g-pcb"></g>
+          </g>
+        </g>
+      </g>
+    </svg>
   </div>
 </template>
 
@@ -65,48 +86,177 @@ export default {
   }
 }
 
+// Every unit = pixels
+function us(value) {
+  return value * 10
+}
+
 var se, s, h, w
-var mg; // master g-element
+var gsf; // Flipped root g-element
+var gpz; // Panned & zoomed g-element
+  var gc; // Coordinate system
+    var gpcb;
+  var gx; // X-axis g, y-fixed
+  var gy; // Y-axis g, x-fixed
 
 function setupCanvas() {
-  se = document.getElementById('viewer')
-  s = d3.select(se)
+  se = document.getElementById('viewer') // The <SVG> element
+  s = d3.select(se) // D3 object of <SVG> element
+
+  // Insert main groups
+  gpz = d3.select('#g-panzoom') // Group with pan- & zoom-able objects such as the coordinate system
+  gc = d3.select('#g-coordinatesystem') // Group containing coordinate-system positioned objects
+    .attr('transform', `translate(${rulerWidth}, -${rulerWidth})`)
+  gpcb = d3.select('#g-pcb')
+
+  gx = d3.select('#g-yfixed'); // Group with objects fixed in the y direction
+  gy = d3.select('#g-xfixed'); // Group with objects fixed in the x direction
+
+  gsf = s.select('#g-flipped') // Same as SVG but flipped
+
+  drawRulers()
+
+  // Things that need to be updated when the size of the canvas changes
   window.addEventListener('resize', function setCanvasSize() {
     h = se.clientHeight;
     w = se.clientWidth;
     se.setAttribute('height', h)
     se.setAttribute('width', w)
+
+    d3.select('.clip-xy')
+      .attr('width', w)
+      .attr('height', h-rulerWidth)
+      .attr('x', rulerWidth)
+    d3.select('.clip-y')
+      .attr('width', w)
+      .attr('height', h)
+      .attr('x', rulerWidth)
+
+    updateRulers();
+
+    gsf.attr('transform', `translate(0, ${h}) scale(1, -1)`)
+
+    // Flip PCB
+    gpcb.attr('transform', `translate(0, ${h}) scale(1, -1)`)
+
     return setCanvasSize
   }())
 
-  mg = s.append('g');
+  // Zoom & pan
+  d3.select(se).call(d3.zoom().scaleExtent([1, 1]).on('zoom', (e) => {
+    gpz.attr('transform', d3.event.transform)
 
-  d3.select(se).call(d3.zoom().scaleExtent([1/8, 8]).on('zoom', (e) => mg.attr('transform', d3.event.transform)));
+    gx.attr('transform', `translate(${d3.event.transform.x}, 0) scale(${d3.event.transform.k}, 1)`)
+    gy.attr('transform', `translate(0, ${d3.event.transform.y}) scale(1, ${d3.event.transform.k})`)
+  }));
 
-  /*s.selectAll('circle')
-  .data(this.holes)
-  .enter().append('circle')
-    .attr('cx', function(h) { return us(h.x); })
-    .attr('cy', function(h) { return us(h.y); })
-    .attr('r', (h) => (h.highlighted ? 2 : 1)*us(h.d)/2);*/
-  /*
-  <polyline fill="none" stroke="black" 
-      points="20,100 40,60 70,80 100,20"/>
-      */
+  // Start render loop
   window.requestAnimationFrame(render.bind(this));
 }
 
-// Unit scale
-function us(value) {
-  return value * 5
+var rulerWidth = 15;
+var rulerTextOffset = 6;
+var rulerLength = 1000; // 100mm
+var tickInterval = 10; // A tick & gridline every 10mm
+var numTicks = rulerLength/tickInterval;
+var rulerBackground = '#555'
+var rulerBorderColor = '#222'
+var gridlineColor = '#aaa'
+function drawRulers() {
+  var xScale = d3.scaleLinear()
+    .domain([-rulerLength, rulerLength])
+    .range([-us(rulerLength), us(rulerLength)]);
+
+  var xAxis = d3.axisBottom(xScale)
+    .ticks(2*numTicks)
+    .tickSize(-us(rulerLength)) // Height of tick gridline
+
+  gx.append('g')
+    .attr('id', 'ruler-x')
+    .call(g => {
+      g.append('rect')
+        .attr('x', -us(rulerLength))
+        .attr('y', 0)
+        .attr('width', 2*us(rulerLength))
+        .attr('height', rulerWidth)
+        .attr('fill', rulerBackground)
+      
+      g.call(xAxis);
+    })
+    .call(axisStyle)
+
+  var yScale = d3.scaleLinear()
+    .domain([-rulerLength, rulerLength])
+    .range([us(rulerLength), -us(rulerLength)]);
+
+  var yAxis = d3.axisLeft(yScale)
+    .ticks(2*numTicks)
+    .tickSize(-us(rulerLength)) // Height of tick gridline
+
+  gy.append('g')
+    .attr('id', 'ruler-y')
+    .call((g) => {
+      g.append('rect')
+        .attr('x', -rulerWidth)
+        .attr('y', -us(rulerLength))
+        .attr('width', rulerWidth)
+        .attr('height', 2*us(rulerLength))
+        .attr('fill', rulerBackground)
+
+      g.call(yAxis);
+    
+      g.selectAll('text')
+        .attr('y', -6)
+        .attr('transform', 'rotate(-90)')
+        .attr('text-anchor', 'middle')
+    })
+    .call(axisStyle)
+
+  function axisStyle(g) {
+    g.select('.domain').attr('stroke', rulerBorderColor);
+
+    g.selectAll('text')
+      .attr('fill', 'white')
+
+    g.selectAll('.tick > line')
+      .attr('stroke', gridlineColor)
+
+    g.selectAll('.tick').filter((d, i) => i === numTicks).select('line')
+      .attr('stroke', 'black')
+  }
+
+  gsf.append('rect')
+    .attr('x', 0)
+    .attr('y', 0)
+    .attr('width', rulerWidth)
+    .attr('height', rulerWidth)
+    .attr('fill', rulerBorderColor)
+  gsf.append('text')
+    .attr('x', rulerWidth/2)
+    .attr('y', -rulerWidth)
+    .attr('fill', 'white')
+    .attr('dy', '0.32em')
+    .attr('font-size', '8px')
+    .attr('text-anchor', 'middle')
+    .attr('transform', `translate(0, ${rulerWidth/-2}) scale(1, -1)`)
+    .text('mm')
 }
 
-function render() {
+function updateRulers() {
+  d3.select('#ruler-y')
+    .attr('transform', `translate(${rulerWidth}, ${(h - us(0*rulerLength) - rulerWidth)})`)
+    //.attr('y', -w+rulerTextOffset)
+
+  d3.select('#ruler-x')
+    .attr('transform', `translate(${rulerWidth}, ${(h - rulerWidth)})`)
+}
+
+function updatePCB(g) {
   var holes = this.holes;
   var holeSizes = this.holeSizes;
 
   if(holeSizes) {
-    var polyline = mg.selectAll('polyline')
+    var polyline = g.selectAll('polyline')
       .data(this.holeSizes);
     
       polyline.exit().remove();
@@ -121,7 +271,7 @@ function render() {
         }, []))
   }
   
-  var circle = mg.selectAll('circle')
+  var circle = g.selectAll('circle')
     .data(holes);
   
     circle.exit().remove();
@@ -132,7 +282,10 @@ function render() {
       .attr('cx', (h) => us(h.x))
       .attr('cy', (h) => us(h.y))
       .attr('r', (h) => (h.highlighted ? 2 : 1)*us(h.d)/2)
+}
 
+function render() {
+  updatePCB.bind(this)(gpcb)
   /*c.save()
   c.clearRect(0, 0, w, h)
   if(cTransform) {
