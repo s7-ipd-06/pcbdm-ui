@@ -7,12 +7,12 @@
           {{ port.comName }}
         </option>
       </select>
-      <button @click="connect" class="connectbutton">{{ connected ? 'Disconnect' : 'Connect' }}</button>
+      <button @click="connect" class="butn connectbutton">{{ connected ? 'Disconnect' : 'Connect' }}</button>
     </div>
 
     <div id="messages">
       <div class="messages-wrapper">
-        <div v-for="message in messages" v-bind:class="message.type">
+        <div v-for="message in messageHistory" v-bind:class="message.type">
           {{ message.value }}
         </div>
       </div>
@@ -21,35 +21,8 @@
     <div id="sendbar" class="heading">
       <form v-on:submit.prevent="sendMessage">
         <input type="text" v-model="messageToSend" placeholder="Custom command" />
-        <input type="submit" value="Send" />
+        <input class="butn" type="submit" value="Send" />
       </form>
-    </div>
-
-    <div id="jog-controls">
-      <div class="keypad-wrapper">
-        <div class="key key-tl" @click="sendMessage('G0 X100000')"></div>
-        <div class="key key-tr"></div>
-        <div style="clear: both"></div>
-        <div class="key key-bl"></div>
-        <div class="key key-br" @click="sendMessage('G0 X-100000')"></div>
-        <div class="keypad">
-          <div class="key key-tl" @click="sendMessage('G0 X10000')"></div>
-          <div class="key key-tr"></div>
-          <div style="clear: both"></div>
-          <div class="key key-bl"></div>
-          <div class="key key-br" @click="sendMessage('G0 X-10000')"></div>
-          <div class="keypad">
-            <div class="key key-tl" @click="sendMessage('G0 X1000')"></div>
-            <div class="key key-tr"></div>
-            <div style="clear: both"></div>
-            <div class="key key-bl"></div>
-            <div class="key key-br" @click="sendMessage('G0 X-1000')"></div>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-large btn-default">
-        <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
-      </button>
     </div>
   </div>
 </template>
@@ -60,16 +33,17 @@ const SerialPort = require('serialport');
 
 export default {
   name: 'serial-monitor',
+  props: ['messageQueue'],
   data () {
     return {
-      messages: [
+      messageHistory: [
         //{type: 'incoming', value: 'Testblabla\\n'},
         //{type: 'outgoing', value: 'Blablatest\\n'},
       ],
       ports: [],
       port: null,
       connected: false,
-      currentPort: '',
+      currentPort: '/dev/cu.usbmodem1411',
       messageToSend: ''
     }
   },
@@ -80,6 +54,9 @@ export default {
         this.ports = result
       })
     }, 1000)
+  },
+  mounted () {
+    this.connect()
   },
   methods: {
     connect () {
@@ -97,31 +74,62 @@ export default {
       this.port.on('open', (err) => {
         console.log('Opened', err)
         this.connected = true;
-
-        // Initial commands
-        setTimeout(() => {
-          this.sendMessage('G91\n') // Relative positioning
-        }, 1000)
       })
       this.port.on('data', (line) => {
-        this.messages.push({
+        this.messageHistory.push({
           type: 'incoming',
           value: line
         })
+
+        if(line.substr(0, 2) == 'ok') {
+          console.log('SerialMonitor: Acknowledged')
+          
+          // Find the first message that needs to be acknowledged
+          var messageToAcknowledge = this.messageQueue.find(m => !m.acknowledged)
+          
+          // Remove the message from the queue
+          this.messageQueue.splice(this.messageQueue.indexOf(messageToAcknowledge), 1)
+        }
+
+        this.$emit('message', line)
 
         //document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
       })
     },
     sendMessage(msg) {
       if(typeof msg != 'string') msg = this.messageToSend
-
+      
+      if(!this.connected) {
+        window.alert('Serial port not connected')
+        return;
+      }
       this.port.write(msg + '\n')
-      this.messages.push({
+
+      this.messageHistory.push({
         type: 'outgoing',
         value: msg
       })
 
       //document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    }
+  },
+  watch: {
+    messageQueue (queue) {
+      //console.log('SerialMonitor: messageQueue watcher:', queue)
+      for(var q in queue) {
+        var m = queue[q];
+        
+        // Don't do anything if there is still a message to be acknowledged that has been sent
+        if(m.acknowledged === false) break;
+        
+        // Find the first message that has not been sent yet and send it
+        if(!m.sent) {
+          this.sendMessage(m.message)
+          m.sent = true
+          m.acknowledged = false;
+          break;
+        }
+      }
     }
   }
 }
@@ -129,69 +137,6 @@ export default {
 </script>
 
 <style scoped>
-
-.keypad-wrapper {
-  position: relative;
-  margin: 40px auto;
-  height: 198px;
-  width: 198px;
-  transform: rotate(45deg);
-  box-shadow: 0 0 15px #555;
-}
-
-.keypad-wrapper > .key {
-  background: #aaa;
-}
-
-.keypad {
-  position: absolute;
-  height: 70%;
-  width: 70%;
-  top: 15%;
-  left: 15%;
-  box-shadow: 0 0 15px #555;
-}
-
-.keypad > .key {
-  background: #777;
-}
-
-.keypad > .keypad {
-  height: 60%;
-  width: 60%;
-  top: 20%;
-  left: 20%;
-}
-
-.keypad > .keypad > .key {
-  background: #555;
-}
-
-.keypad-wrapper > .key {
-
-}
-  .key {
-    box-sizing: border-box;
-    float: left;
-    height: 50%;
-    width: 50%;
-    cursor: pointer;
-  }
-
-  .key:hover {
-    opacity: 0.9;
-  }
-  .key:active {
-    opacity: 0.75;
-  }
-
-  .key-tl, .key-bl {
-    border-right: 1px solid #333;
-  }
-
-  .key-tl, .key-tr {
-    border-bottom: 1px solid #333;
-  }
 
 #messages {
   height: 250px;
@@ -231,11 +176,11 @@ export default {
   border-bottom: 1px solid #ddd;
 }
 
-button, input[type=submit] {
+button.butn, input.butn[type=submit] {
   float: right;
 }
 
-button, input[type=submit] {
+button.butn, input.butn[type=submit] {
   background: #666;
   color: #fff;
   padding: 8px 10px;
@@ -251,7 +196,7 @@ button, input[type=submit] {
   width: 82px;
 }
 
-button:active, input[type=submit]:active {
+button.butn:active, input.butn[type=submit]:active {
   background: #777;
   box-shadow: inset 0 0 16px 0px #888;
 }

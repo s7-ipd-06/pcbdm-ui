@@ -257,10 +257,10 @@ function updatePCB(g) {
     
     circle.enter().append('circle')
     .merge(circle)
-      .attr('fill', (h) => `hsl(${h.hue}, 25%, 50%)`)
+      .attr('fill', (h) => `hsl(${h.hue}, ${h.state == 'done' ? 0 : 25}%, 50%)`)
       .attr('cx', (h) => us(h.x))
       .attr('cy', (h) => us(h.y))
-      .attr('r', (h) => (h.highlighted ? 2 : 1)*us(h.d)/2)
+      .attr('r', (h) => (h.highlighted || ['positioning', 'drilling-up', 'drilling-down'].indexOf(h.state) != -1 ? 2 : 1)*us(h.d)/2)
       
 }
 

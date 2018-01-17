@@ -13,6 +13,7 @@
           <th>x</th>
           <th>y</th>
           <th>diameter</th>
+          <th>state</th>
         </tr>
       </thead>
       <tbody>
@@ -21,6 +22,7 @@
           <td>{{ hole.x }}</td>
           <td>{{ hole.y }}</td>
           <td>{{ hole.d }}</td>
+          <td>{{ hole.state }}</td>
         </tr>
       </tbody>
     </table>

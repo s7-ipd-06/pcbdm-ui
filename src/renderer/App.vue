@@ -9,31 +9,9 @@
     </section>
 
     <aside id="sidebar-right">
-      <div id="process-controller">
-        <h5>{{ file.name }}</h5>
-
-        Total distance, estimated drill time:
-
-        <button type="button" :class="['btn', pc.playing ? 'btn-danger' : 'btn-success']" id="pc-playpause">
-          <span class="glyphicon" :class="[pc.playing ? 'glyphicon-pause' : 'glyphicon-play']" aria-hidden="true"></span>
-        </button>
-        <button type="button" class="btn" id="pc-stop">
-          <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
-        </button>
-
-        <div class="progress">
-          <div class="progress-bar" role="progressbar" :style="{ width: progress + '%' }" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">{{ progress }}%</div>
-        </div>
-
-        Drilled 0 of 24 holes.<br />
-        Drilled 900 of 14343 mm<br />
-        Average time per hole: 2.4 s<br />
-        Estimated drill time left: 4:32<br />
-        <br />
-      </div>
-
-      <serial-monitor></serial-monitor>
-      <!-- ManualControls -->
+      <process-controller :file="file" :holes="holes" :messageQueue="messageQueue"></process-controller>
+      <serial-monitor :messageQueue="messageQueue"></serial-monitor>
+      <manual-controls :messageQueue="messageQueue"></manual-controls>
     </aside>
   </div>
 </template>
@@ -43,8 +21,11 @@
   const Path = require('path')
 
   import HoleList from '@/components/HoleList'
-  import SerialMonitor from '@/components/SerialMonitor'
   import PcbViewer from '@/components/PCBViewer'
+  import ProcessController from '@/components/ProcessController'
+  import SerialMonitor from '@/components/SerialMonitor'
+  import ManualControls from '@/components/ManualControls'
+  
 
   import HoleExtractor from '../lib/hole-extractor.js'
   import HoleSorter from '../lib/hole-sorter.js'
@@ -54,7 +35,9 @@
     components: {
       HoleList,
       PcbViewer,
-      SerialMonitor
+      ProcessController,
+      'serial-monitor': SerialMonitor,
+      ManualControls
     },
     data () {
       return {
@@ -66,7 +49,8 @@
         pc: { // Proces Controller
           playing: false
         },
-        path: []
+        path: [],
+        messageQueue: []
       }
     },
     computed: {
@@ -79,7 +63,7 @@
       if(process.env.NODE_ENV == 'development') {
         var files = fs.readdirSync(__static + '/testboards/').filter(f => f.substr(0, 1) != '.')
         var randomFile = files[Math.floor(Math.random()*files.length)]
-        //randomFile = 'wagencontroller.brd';
+        randomFile = 'test pcb.brd';
         this.loadFile(__static + '/testboards/' + randomFile)
       }
     },
@@ -133,36 +117,43 @@
             this.holes = sortedHoles.map((hole, i) => {
               hole.optimizedIndex = i
               hole.highlighted = false
-              hole.drilled = false
+              hole.state = ''
               return hole
             })
           })
         })
         .catch((e) => {throw e})
+      },
+      receivedMessage (message) {
+
       }
     },
     watch: {
-      holes (holes) {
-        const path = [];
+      holes: {
+        handler (holes) {
+          const path = [];
 
-        let ph; // Previous hole
-        holes.forEach((h) => {
-          if(h.drilled) return;
-
-          if(!ph) {
-            path.push({ x: 0, y: 0, x2: h.x, y2: h.y, w: 1, c: `hsl(0, 0%, 50%)` })
-          } else {
-            if(ph.d == h.d) {
-              path.push({ x: ph.x, y: ph.y, x2: h.x, y2: h.y, w: 2, c: `hsl(${h.hue}, 50%, 50%)` })
-            } else {
-              path.push({ x: ph.x, y: ph.y, x2: h.x, y2: h.y, w: 1, c: `hsl(0, 0%, 50%)` })
+          let ph; // Previous hole
+          holes.forEach((h) => {
+            //console.log(h.state)
+            if(h.state != 'done') {
+              if(!ph) {
+                path.push({ x: 0, y: 0, x2: h.x, y2: h.y, w: 1, c: `hsl(0, 0%, 50%)` })
+              } else {
+                if(ph.d == h.d) {
+                  path.push({ x: ph.x, y: ph.y, x2: h.x, y2: h.y, w: 2, c: `hsl(${h.hue}, 50%, 50%)` })
+                } else {
+                  path.push({ x: ph.x, y: ph.y, x2: h.x, y2: h.y, w: 1, c: `hsl(0, 0%, 50%)` })
+                }
+              }
             }
-          }
 
-          ph = h;
-        })
+            ph = h;
+          })
 
-        this.path = path;
+          this.path = path;
+        },
+        deep: true
       }
     }
   }
