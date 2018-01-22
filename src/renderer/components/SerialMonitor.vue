@@ -43,7 +43,7 @@ export default {
       ports: [],
       port: null,
       connected: false,
-      currentPort: '/dev/cu.usbmodem1411',
+      currentPort: '/dev/cu.usbmodem3880131',
       messageToSend: ''
     }
   },
@@ -71,8 +71,9 @@ export default {
         baudrate: 115200,
         parser: SerialPort.parsers.readline('\n')
       })
-      this.port.on('open', (err) => {
-        console.log('Opened', err)
+      this.port.on('error', console.log)
+      this.port.on('open', () => {
+        console.log('Opened')
         this.connected = true;
       })
       this.port.on('data', (line) => {

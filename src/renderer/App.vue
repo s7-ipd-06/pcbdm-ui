@@ -63,7 +63,7 @@
       if(process.env.NODE_ENV == 'development') {
         var files = fs.readdirSync(__static + '/testboards/').filter(f => f.substr(0, 1) != '.')
         var randomFile = files[Math.floor(Math.random()*files.length)]
-        randomFile = 'test pcb.brd';
+        //randomFile = 'test pcb.brd';
         this.loadFile(__static + '/testboards/' + randomFile)
       }
     },
@@ -114,9 +114,12 @@
           var hs = new HoleSorter(holes)
           .on('sorted', (sortedHoles) => {
             // Add extra properties to be populated later
+            var previousHole = { x: 0, y: 0 }
             this.holes = sortedHoles.map((hole, i) => {
               hole.optimizedIndex = i
               hole.highlighted = false
+              hole.distance = Math.sqrt(Math.pow(Math.abs(hole.x-previousHole.x), 2) + Math.pow(Math.abs(hole.y-previousHole.y), 2))
+              previousHole = hole
               hole.state = ''
               return hole
             })
