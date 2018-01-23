@@ -1,6 +1,6 @@
 # PCB Drilling Machine User Interface
 
-![screenshot](https://github.com/s7-ipd-06/screenshot.png "Screenshot")
+![screenshot](https://github.com/s7-ipd-06/pcbdm-ui/blob/master/screenshot.png "Screenshot")
 
 #### Build Setup
 Make sure to have [Node.js](https://nodejs.org) installed
