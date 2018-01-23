@@ -19,7 +19,7 @@
     </div>
 
     <div id="sendbar" class="heading">
-      <form v-on:submit.prevent="sendMessage">
+      <form v-on:submit.prevent="sendCustomMessage">
         <input type="text" v-model="messageToSend" placeholder="Custom command" />
         <input class="butn" type="submit" value="Send" />
       </form>
@@ -33,7 +33,7 @@ const SerialPort = require('serialport');
 
 export default {
   name: 'serial-monitor',
-  props: ['messageQueue'],
+  props: ['messageQueue', 'serialState'],
   data () {
     return {
       messageHistory: [
@@ -42,8 +42,8 @@ export default {
       ],
       ports: [],
       port: null,
-      connected: false,
       currentPort: '/dev/cu.usbmodem3880131',
+      connected: false,
       messageToSend: ''
     }
   },
@@ -90,21 +90,29 @@ export default {
           
           // Remove the message from the queue
           this.messageQueue.splice(this.messageQueue.indexOf(messageToAcknowledge), 1)
+        } else if(line.substr(0, 3) == 'err') {
+          // Find the first message that needs to be acknowledged
+          var messageToAcknowledge = this.messageQueue.find(m => !m.acknowledged)
+          
+          // Resend
+          if(!messageToAcknowledge.retries) messageToAcknowledge.retries = 0
+          if(messageToAcknowledge.retries++ > 10) {
+            this.messageQueue.splice(this.messageQueue.indexOf(messageToAcknowledge), 1)
+            window.alert('Serial communication error')
+            return;
+          }
+
+          this.sendMessage(messageToAcknowledge.message)
         }
-
-        this.$emit('message', line)
-
-        //document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
       })
     },
     sendMessage(msg) {
-      if(typeof msg != 'string') msg = this.messageToSend
-      
       if(!this.connected) {
         window.alert('Serial port not connected')
         return;
       }
-      this.port.write(msg + '\n')
+
+      this.port.write(msg + '\n' + String.fromCharCode(msg.length))
 
       this.messageHistory.push({
         type: 'outgoing',
@@ -112,9 +120,15 @@ export default {
       })
 
       //document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+    },
+    sendCustomMessage(msg) {
+      this.messageQueue.push({ message: this.messageToSend })
     }
   },
   watch: {
+    connected (v) {
+      this.serialState.connected = v
+    },
     messageQueue (queue) {
       //console.log('SerialMonitor: messageQueue watcher:', queue)
       for(var q in queue) {
@@ -140,7 +154,7 @@ export default {
 <style scoped>
 
 #messages {
-  height: 250px;
+  height: 240px;
   background: #fff;
   padding: 8px;
   box-shadow: inset 0 0 16px 0px #d0d0d0;

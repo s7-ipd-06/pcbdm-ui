@@ -9,8 +9,8 @@
     </section>
 
     <aside id="sidebar-right">
-      <process-controller :file="file" :holes="holes" :messageQueue="messageQueue"></process-controller>
-      <serial-monitor :messageQueue="messageQueue"></serial-monitor>
+      <process-controller :file="file" :holes="holes" :messageQueue="messageQueue" :serialState="serialState"></process-controller>
+      <serial-monitor :messageQueue="messageQueue" :serialState="serialState"></serial-monitor>
       <manual-controls :messageQueue="messageQueue"></manual-controls>
     </aside>
   </div>
@@ -50,6 +50,9 @@
           playing: false
         },
         path: [],
+        serialState: {
+          connected: false
+        },
         messageQueue: []
       }
     },
@@ -63,7 +66,7 @@
       if(process.env.NODE_ENV == 'development') {
         var files = fs.readdirSync(__static + '/testboards/').filter(f => f.substr(0, 1) != '.')
         var randomFile = files[Math.floor(Math.random()*files.length)]
-        //randomFile = 'test pcb.brd';
+        randomFile = 'test pcb.brd';
         this.loadFile(__static + '/testboards/' + randomFile)
       }
     },
@@ -126,9 +129,6 @@
           })
         })
         .catch((e) => {throw e})
-      },
-      receivedMessage (message) {
-
       }
     },
     watch: {

@@ -1,23 +1,23 @@
 <template>
   <div id="manual-controls">
     <div class="keypad-wrapper">
-      <div class="key key-tl" @click="sendMessage(['G91', 'G0 X100000'])"></div>
-      <div class="key key-tr"></div>
+      <div class="key key-tl" @click="sendMessage(['G91', 'G0 Y100000'])"></div>
+      <div class="key key-tr" @click="sendMessage(['G91', 'G0 X100000'])"></div>
       <div style="clear: both"></div>
-      <div class="key key-bl"></div>
-      <div class="key key-br" @click="sendMessage(['G91', 'G0 X-100000'])"></div>
+      <div class="key key-bl" @click="sendMessage(['G91', 'G0 X-100000'])"></div>
+      <div class="key key-br" @click="sendMessage(['G91', 'G0 Y-100000'])"></div>
       <div class="keypad">
-        <div class="key key-tl" @click="sendMessage(['G91', 'G0 X10000'])"></div>
-        <div class="key key-tr"></div>
+        <div class="key key-tl" @click="sendMessage(['G91', 'G0 Y10000'])"></div>
+        <div class="key key-tr" @click="sendMessage(['G91', 'G0 X10000'])"></div>
         <div style="clear: both"></div>
-        <div class="key key-bl"></div>
-        <div class="key key-br" @click="sendMessage(['G91', 'G0 X-10000'])"></div>
+        <div class="key key-bl" @click="sendMessage(['G91', 'G0 X-10000'])"></div>
+        <div class="key key-br" @click="sendMessage(['G91', 'G0 Y-10000'])"></div>
         <div class="keypad">
-          <div class="key key-tl" @click="sendMessage(['G91', 'G0 X1000'])"></div>
-          <div class="key key-tr"></div>
+          <div class="key key-tl" @click="sendMessage(['G91', 'G0 Y1000'])"></div>
+          <div class="key key-tr" @click="sendMessage(['G91', 'G0 X1000'])"></div>
           <div style="clear: both"></div>
-          <div class="key key-bl"></div>
-          <div class="key key-br" @click="sendMessage(['G91', 'G0 X-1000'])"></div>
+          <div class="key key-bl" @click="sendMessage(['G91', 'G0 X-1000'])"></div>
+          <div class="key key-br" @click="sendMessage(['G91', 'G0 Y-1000'])"></div>
         </div>
       </div>
     </div>

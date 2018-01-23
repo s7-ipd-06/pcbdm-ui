@@ -1,31 +1,33 @@
 <template>
   <div id="process-controller">
     <h5>{{ file.name }}</h5>
-
-    <button type="button" :class="['btn', playing ? 'btn-danger' : 'btn-success']" v-on:click="playPause">
-      <span class="glyphicon" :class="[playing ? 'glyphicon-pause' : 'glyphicon-play']" aria-hidden="true"></span>
-    </button>
-    <button type="button" class="btn" v-on:click="stop">
-      <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
-    </button>
-    <br /><br />
-    <div class="progress">
-      <div class="progress-bar" role="progressbar" :style="{ width: progress + '%' }" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">{{ progress }}%</div>
+    <div v-if="connected">
+      <button type="button" :class="['btn', playing ? 'btn-warning' : 'btn-success']" v-on:click="playPause">
+        <span class="glyphicon" :class="[playing ? 'glyphicon-pause' : 'glyphicon-play']" aria-hidden="true"></span>
+      </button>
+      <button type="button" class="btn btn-danger" v-on:click="stop">
+        <span class="glyphicon glyphicon-stop" aria-hidden="true"></span>
+      </button>
+      <br /><br />
+      <div class="progress">
+        <div class="progress-bar" role="progressbar" :style="{ width: progress + '%' }" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100">{{ progress }}%</div>
+      </div>
+      Drilled {{ holesDone }} of {{ holes.length }} holes.<br />
+      Drilled {{ distanceCovered}} of {{ totalDistance }} mm<br />
+      Average time per/m incl. drilling: {{ Math.round(durationPerMM*1000) }}ms<br />
+      {{ Math.round(timeElapsed/1000) }}s of estimated {{ Math.round((timeElapsed + timeRemaining)/1000) }}s elapsed<br />
+      Average time per hole: {{ averageTimePerHole }} ms
     </div>
-    Drilled {{ holesDone }} of {{ holes.length }} holes.<br />
-    Drilled {{ distanceCovered}} of {{ totalDistance }} mm<br />
-    Average time per/m incl. drilling: {{ Math.round(durationPerMM*1000) }}ms<br />
-    {{ Math.round(timeElapsed/1000) }}s of estimated {{ Math.round((timeElapsed + timeRemaining)/1000) }}s elapsed<br />
-    Average time per hole: {{ averageTimePerHole }} ms<br />
-
-    <br />
+    <div v-else="connected">
+      Please connect to the machine by selecting a serialport
+    </div>
   </div>
 </template>
 
 <script>
 
 const config = {
-  z_down: 1,
+  z_down: 15000,
   z_up: 0
 }
 
@@ -33,7 +35,7 @@ var mm2um = (v) => Math.round(v * 1000)
 
 export default {
   name: 'process-controller',
-  props: ['file', 'holes', 'messageQueue'],
+  props: ['file', 'holes', 'messageQueue', 'serialState'],
   data () {
     return {
       playing: false,
@@ -98,6 +100,7 @@ export default {
     tick() { // Find next hole to drill
       if(!this.playing) return;
       this.endTime = Date.now()
+      var previousHole;
       holeLoop: for(var h in this.holes) {
         var hole = this.holes[h]
         
@@ -105,6 +108,8 @@ export default {
           case 'positioning':
             hole.state = 'drilling-down'
             hole.startTime = Date.now()
+            this.messageQueue.push({ message: 'C3' }) // Lock position
+            this.messageQueue.push({ message: 'M3' }) // Drill on
             this.messageQueue.push({ message: `G0 Z${config.z_down}` })
             break holeLoop;
           case 'drilling-down':
@@ -112,6 +117,8 @@ export default {
             this.messageQueue.push({ message: `G0 Z${config.z_up}` })
             break holeLoop;
           case 'drilling-up':
+            this.messageQueue.push({ message: 'M5' }) // Drill off
+            this.messageQueue.push({ message: 'C4' }) // Unlock position
             hole.state = 'done'
             break;
           case 'done':
@@ -124,6 +131,12 @@ export default {
             }
             break;
           default: // No state yet, start positioning
+            if(previousHole) {
+              if(previousHole.d != hole.d) {
+                window.alert(`Please change the tool to diameter: ${hole.d}mm`)
+              }
+              previousHole = hole
+            }
             hole.state = 'positioning'
             console.log(`ProcessController: hole ${hole.optimizedIndex} state: ${hole.state} `)
             this.messageQueue.push({ message: `G0 X${mm2um(hole.x)} Y${mm2um(hole.y)}` })
@@ -133,6 +146,9 @@ export default {
     }
   },
   computed: {
+    connected () {
+      return this.serialState.connected
+    },
     holesDone () {
       return this.holes.reduce((i, h) => i += h.state == 'done', 0)
     },
@@ -141,7 +157,6 @@ export default {
     },
     progress () {
       return  Math.round(100 * this.distanceCovered / this.totalDistance)
-      //return Math.round(100 * this.holesLeft / this.holes.length);
     },
     totalDistance () {
       return Math.round(this.holes.reduce((d, h) => d += h.distance, 0))
@@ -176,6 +191,7 @@ export default {
 
 #process-controller {
   padding: 8px;
+  height: 225px;
 }
 
 </style>
