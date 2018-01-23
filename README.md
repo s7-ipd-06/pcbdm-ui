@@ -1,22 +1,21 @@
-# my-project
+# PCB Drilling Machine User Interface
 
-> An electron-vue project
+![screenshot](https://github.com/s7-ipd-06.png "Screenshot")
 
 #### Build Setup
+Make sure to have [Node.js](https://nodejs.org) installed
 
 ``` bash
-# install dependencies
+# Install dependencies
 npm install
 
-# serve with hot reload at localhost:9080
+# Serve with hot reload at localhost:9080
 npm run dev
 
-# build electron application for production
+# Build electron application for production
 npm run build
 
-
 ```
-
 ---
 
 This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue)@[331f85f](https://github.com/SimulatedGREG/electron-vue/tree/331f85fd556cc0d60a30ad019a44a29baaed49f5) using [vue-cli](https://github.com/vuejs/vue-cli). Documentation about the original structure can be found [here](https://simulatedgreg.gitbooks.io/electron-vue/content/index.html).
