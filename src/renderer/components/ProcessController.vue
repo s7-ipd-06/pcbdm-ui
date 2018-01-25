@@ -100,7 +100,7 @@ export default {
     tick() { // Find next hole to drill
       if(!this.playing) return;
       this.endTime = Date.now()
-      var previousHole;
+      var previousHoleD;
       holeLoop: for(var h in this.holes) {
         var hole = this.holes[h]
         
@@ -131,12 +131,13 @@ export default {
             }
             break;
           default: // No state yet, start positioning
-            if(previousHole) {
-              if(previousHole.d != hole.d) {
+            /*if(previousHoleD) {
+              if(previousHoleD != hole.d) {
                 window.alert(`Please change the tool to diameter: ${hole.d}mm`)
               }
-              previousHole = hole
             }
+            previousHoleD = hole.d*/
+
             hole.state = 'positioning'
             console.log(`ProcessController: hole ${hole.optimizedIndex} state: ${hole.state} `)
             this.messageQueue.push({ message: `G0 X${mm2um(hole.x)} Y${mm2um(hole.y)}` })

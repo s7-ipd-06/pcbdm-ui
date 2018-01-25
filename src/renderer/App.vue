@@ -56,17 +56,12 @@
         messageQueue: []
       }
     },
-    computed: {
-      progress () {
-        return 25;
-      }
-    },
     mounted () {
       // Add test file when in development mode
       if(process.env.NODE_ENV == 'development') {
         var files = fs.readdirSync(__static + '/testboards/').filter(f => f.substr(0, 1) != '.')
         var randomFile = files[Math.floor(Math.random()*files.length)]
-        randomFile = 'test pcb.brd';
+        randomFile = 'expo2015.brd';
         this.loadFile(__static + '/testboards/' + randomFile)
       }
     },
@@ -77,6 +72,11 @@
           name: pathInfo.base,
           path: path,
           body: fs.readFileSync(path).toString()
+        }
+
+        if(pathInfo.ext != '.brd') {
+          window.alert('Loaded file is not an Eagle board file (.brd)')
+          return;
         }
 
         console.log('App: PCBViewer@loadFile: ', file.path)

@@ -1,5 +1,5 @@
 <template>
-  <div id="pcb-viewer">
+  <div id="pcb-viewer" :class="{ droppable: droppable }">
     <svg id="viewer">
       <defs>
         <clipPath id="clippath-pcb-area">
@@ -22,6 +22,13 @@
         </g>
       </g>
     </svg>
+    <div id="dropIndicator">
+      <div class="drop-here">
+        <span class="drop-here-icon"></span>
+        <br />
+        <span>Drop your .brd file</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -39,6 +46,11 @@ const d3 = require('d3')
 export default {
   name: 'pcb-viewer',
   props: ['holes', 'path'],
+  computed: {
+    droppable () {
+      return this.holes.length == 0 ? true : false
+    }
+  },
   mounted () {
     setupCanvas.bind(this)()
 
@@ -124,7 +136,7 @@ function setupCanvas() {
   }())
 
   // Zoom & pan
-  d3.select(se).call(d3.zoom().scaleExtent([1, 1]).on('zoom', (e) => {
+  d3.select(se).call(d3.zoom().scaleExtent([0.5, 2]).on('zoom', (e) => {
     gpz.attr('transform', d3.event.transform)
 
     gx.attr('transform', `translate(${d3.event.transform.x}, 0) scale(${d3.event.transform.k}, 1)`)
@@ -276,6 +288,46 @@ function render() {
 #pcb-viewer, #viewer {
   height: 100%;
   width: 100%;
+}
+
+#dropIndicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background: #fff;
+  box-shadow: 0 0 50px #555 inset;
+  opacity: 0;
+  transition: all 150ms;
+}
+
+#pcb-viewer.dropTarget #dropIndicator, #pcb-viewer.droppable #dropIndicator {
+  opacity: 1;
+}
+
+.drop-here {
+  margin: 25% auto;
+  width: 300px;
+  padding: 16px;
+  border: 3px dashed #ccc;
+  border-radius: 12px;
+  text-align: center;
+  color: #aaa;
+}
+
+.drop-here span {
+  display: inline-block;
+}
+
+.drop-here .drop-here-icon {
+  height: 50px;
+  width: 50px;
+  margin-bottom: 16px;
+
+  -webkit-mask-image: url('/static/drop-file.svg');
+  mask-image: url('/static/drop-file.svg');
+  background-color: #ccc;
 }
 
 </style>

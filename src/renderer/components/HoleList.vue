@@ -1,11 +1,5 @@
 <template>
   <div id="hole-list">
-    <div class="drop-here">
-      <span class="drop-here-icon"></span>
-      <br />
-      <span>Drop your .brd file</span>
-    </div>
-
     <table cellpadding="0" cellspacing="0">
       <thead>
         <tr>
@@ -67,39 +61,6 @@ export default {
 </script>
 
 <style scoped>
-
-.drop-here {
-  position: absolute;
-  top: 45%;
-  left: 16px;
-  right: 16px;
-  padding: 16px;
-  border: 3px dashed #ccc;
-  border-radius: 12px;
-  text-align: center;
-  color: #aaa;
-  z-index: -9;
-}
-
-.drop-here span {
-  display: inline-block;
-}
-
-.drop-here .drop-here-icon {
-  height: 50px;
-  width: 50px;
-  margin-bottom: 16px;
-
-  -webkit-mask-image: url('/static/drop-file.svg');
-  mask-image: url('/static/drop-file.svg');
-  background-color: #ccc;
-}
-
-.dropTarget {
-  box-shadow: inset 0 0 24px #888;
-  background-color: #fafafa;
-  transition: all 200ms;
-}
 
 #hole-list {
   display: block;

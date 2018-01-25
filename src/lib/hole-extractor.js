@@ -36,7 +36,7 @@ export default function(fileString) {
       const byName = (arr, name) => arr.filter((el) => el.$.name == name)[0]
 
       let holes = []
-
+      console.log(board)
       // Loop through components
       board.elements[0].element.forEach((element) => {
         const libraryName = element.$.library;
@@ -67,6 +67,11 @@ export default function(fileString) {
         holes = [...holes, ...packageHoles]
       })
 
+      // Loop through plain holes
+      board.plain[0].hole.forEach((hole) => {
+        holes.push({x: hole.$.x, y: hole.$.y, d: F(hole.$.drill)})
+      })
+
       resolve(holes)
     })
   })
@@ -77,22 +82,20 @@ function extractPackageHoles(pkg) {
   
   if(typeof pkg.pad != 'undefined') {
     pkg.pad.forEach((pad) => {
-      // Don't add pads
-      /*switch(pad.$.shape) {
-        case 'octagon':
-        case 'long':
-          holes.push({x: pad.$.x, y: pad.$.y, d: F(pad.$.drill)})
-          break;
-        default:
-          holes.push({x: pad.$.x, y: pad.$.y, d: F(pad.$.diameter)})
-          break;
-      }*/
-
-      // Hole
+      // Pad hole
       if(typeof pad.$.drill !== 'undefined') {
         holes.push({x: pad.$.x, y: pad.$.y, d: F(pad.$.drill)})
       }
     })
+
+    if(pkg.hole) {
+      pkg.hole.forEach((hole) => {
+        // Hole
+        if(typeof hole.$.drill !== 'undefined') {
+          holes.push({x: hole.$.x, y: hole.$.y, d: F(hole.$.drill)})
+        }
+      })
+    }
   }
 
   return holes
